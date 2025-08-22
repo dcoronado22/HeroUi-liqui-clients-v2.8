@@ -44,48 +44,86 @@ export default function VinculacionCasePage() {
     const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
     const [loadingNext, setLoadingNext] = React.useState(false);
 
+    // 🔥 NUEVO: Resetear contexto cuando cambia el caseId
+    React.useEffect(() => {
+        // Si ya hay un ID en el contexto y es diferente al actual, resetear
+        if (flow.id && flow.id !== caseId) {
+            console.log(`Resetting context: changing from ${flow.id} to ${caseId}`);
+            flow.reset();
+        }
+    }, [caseId, flow.id, flow.reset]);
+
     const currentStepId = React.useMemo(() => {
         if (!flow.currentState) return "registro";
         return StateToStepId[flow.currentState] ?? "registro";
     }, [flow.currentState]);
 
+    const resolveRFC = (search: URLSearchParams, caseId: string, flowRfc?: string | null) => {
+        const fromQuery = search.get("rfc")?.trim().toUpperCase();
+        const fromStorage = typeof window !== "undefined"
+            ? sessionStorage.getItem(`v:${caseId}:rfc`) ?? undefined
+            : undefined;
+        const fromCtx = flowRfc ?? undefined;
+
+        // 🔥 PRIORIDAD: Query > Storage > Context
+        // Si el RFC del query es diferente al del contexto, usar el del query
+        const resolved = fromQuery || fromStorage || fromCtx;
+
+        // 🔥 Si el RFC resuelto es diferente al del contexto, limpiar el contexto
+        if (resolved && fromCtx && resolved !== fromCtx) {
+            console.log(`RFC mismatch detected: query/storage=${resolved}, context=${fromCtx}. Resetting context.`);
+            flow.reset();
+        }
+
+        return resolved;
+    };
+
     // carga/refresh de detalle
     const refreshFromDetalle = React.useCallback(async () => {
-        const rfc = flow.rfc
-            ?? (typeof window !== "undefined" ? sessionStorage.getItem(`v:${caseId}:rfc`) ?? undefined : undefined)
-            ?? search.get("rfc")?.toUpperCase();
+        const rfc = resolveRFC(search, caseId, flow.rfc);
 
         if (!rfc) {
             setErrorMsg("No fue posible resolver el RFC del caso.");
             return;
         }
 
-        const res = await VinculacionService.getDetalle(caseId, rfc);
-        const v = res?.vinculacion;
-
-        if (!v) {
-            setErrorMsg("No se encontró la vinculación.");
-            redirect("/vinculacion/nuevo");
-            return;
+        if (typeof window !== "undefined") {
+            sessionStorage.setItem(`v:${caseId}:rfc`, rfc);
         }
-        setDetalle(res);
 
-        const flags = {
-            personaMoral: v?.datosRegistroVinculacion?.tipoContribuyente === 0,
-            aplicaAval: res?.alianza?.aplicaAval === true,
-            claveCiecIsValid: res?.claveCiecIsValid === true,
-        };
+        try {
+            const res = await VinculacionService.getDetalle(caseId, rfc);
+            const v = res?.vinculacion;
 
-        flow.hydrateFromDetalle({
-            id: v.id,
-            rfc: v.datosRegistroVinculacion?.rfc,
-            state: v.state,
-            flags,
-        });
+            if (!v) {
+                setErrorMsg("No se encontró la vinculación.");
+                redirect("/vinculacion/nuevo");
+                return;
+            }
 
-        setErrorMsg(null);
+            setDetalle(res);
+
+            const flags = {
+                personaMoral: v?.datosRegistroVinculacion?.tipoContribuyente === 0,
+                aplicaAval: res?.alianza?.aplicaAval === true,
+                claveCiecIsValid: res?.claveCiecIsValid === true,
+            };
+
+            // 🔥 IMPORTANTE: Siempre hidratar con los datos del backend
+            flow.hydrateFromDetalle({
+                id: v.id,
+                rfc: v.datosRegistroVinculacion?.rfc,
+                state: v.state,
+                flags,
+            });
+
+            setErrorMsg(null);
+        } catch (error) {
+            console.error("Error loading detalle:", error);
+            setErrorMsg("Error cargando los datos de la vinculación.");
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [caseId, search, flow.rfc]);
+    }, [caseId, search]);
 
     const withRefresh = React.useCallback(
         (action?: () => Promise<void> | void) =>
@@ -159,7 +197,7 @@ export default function VinculacionCasePage() {
                             ctx={flow.flags}
                             currentId={currentStepId}
                             clickable={false}
-                            compact={collapsed} // Adjusts the stepper to be more compact when collapsed
+                            compact={collapsed}
                         />
                     </CardBody>
                 </Card>
@@ -181,8 +219,8 @@ export default function VinculacionCasePage() {
                                         id={flow.id!}
                                         rfc={flow.rfc!}
                                         detalle={detalle}
-                                        bindStepActions={bindStepActions}   // 👈 se lo pasamos al step
-                                        onAdvance={refreshFromDetalle}      // si quieres mantener esta vía también
+                                        bindStepActions={bindStepActions}
+                                        onAdvance={refreshFromDetalle}
                                     />
                                 ) : (
                                     <div className="text-default-500">
@@ -191,7 +229,7 @@ export default function VinculacionCasePage() {
                                 )}
                             </div>
 
-                            {/* FOOTER (por ahora deshabilitado; cada Step puede manejar su CTA propio o lo conectamos luego) */}
+                            {/* FOOTER */}
                             <StepActions
                                 onPrev={stepActions.prev}
                                 onNext={stepActions.next}

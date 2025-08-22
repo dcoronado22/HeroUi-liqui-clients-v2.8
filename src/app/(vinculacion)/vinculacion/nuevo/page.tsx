@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, Input, Checkbox, Button, Divider, CardFooter } from "@heroui/react";
+import { Card, CardBody, Input, Checkbox, Button, Divider, CardFooter, cn } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import { useAuthStore } from "@liquicapital/common";
 import VerticalStepper from "@/src/shared/components/Stepper/VerticalStepper";
@@ -12,6 +12,7 @@ import { VinculacionService } from "@/src/domains/vinculacion/services/vinculaci
 import StepActions from "@/src/shared/components/Stepper/StepActions";
 import { Icon } from "@iconify/react";
 import { STEPS } from "@/src/domains/vinculacion/steps";
+import { useVinculacionFlow } from "@/src/domains/vinculacion/context/flow-context";
 
 const ALLIANCE_CODE = "8";
 
@@ -84,6 +85,13 @@ export default function VinculacionNuevoPage() {
         nombres, apellidoPaterno, apellidoMaterno, email, nacionalidad
     ]);
 
+    const flow = useVinculacionFlow();
+
+    React.useEffect(() => {
+        // Resetear siempre al montar
+        flow.reset();
+    }, [])
+
     const onSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!canSubmit || submitting) return;
@@ -148,12 +156,19 @@ export default function VinculacionNuevoPage() {
         }
     };
 
+    const collapsed = flow.sidebarCollapsed;
+
     return (
         <div className="w-full h-screen px-4 py-6 flex flex-col">
 
             <div className="flex min-h-0 gap-4 h-[88dvh]">
                 {/* LEFT: Stepper (solo visual en 'nuevo') */}
-                <Card className="basis-[20%] shrink-0 h-full">
+                <Card
+                    className={cn(
+                        "shrink-0 h-full transition-all duration-300 overflow-hidden",
+                        collapsed ? "w-[5.3%]" : "basis-[20%]"
+                    )}
+                >
                     <CardBody className="h-full overflow-auto">
                         <VerticalStepper
                             steps={STEPS}
@@ -161,7 +176,7 @@ export default function VinculacionNuevoPage() {
                             currentId={currentId}
                             onChange={() => { /* no-op: forward-only en 'nuevo' */ }}
                             clickable={false}
-                            compact
+                            compact={collapsed}
                         />
                     </CardBody>
                 </Card>
@@ -183,6 +198,7 @@ export default function VinculacionNuevoPage() {
                                     placeholder="Ej. ABC123456789"
                                     isRequired
                                 />
+                                {isPersonaMoral && (<Input variant="faded" label="Razón social" value={razonSocial} onValueChange={setRazonSocial} isRequired />)}
                             </div>
 
                             {isPersonaMoral ? (
@@ -191,7 +207,13 @@ export default function VinculacionNuevoPage() {
                                     <h2 className="font-medium">Persona moral</h2>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <Input variant="faded" label="Razón social" value={razonSocial} onValueChange={setRazonSocial} isRequired />
+                                        <Input variant="faded" label="Nombres rep. legal" value={nombresRep} onValueChange={setNombresRep} isRequired />
+                                        <Input variant="faded" label="Apellido paterno rep." value={apPatRep} onValueChange={setApPatRep} isRequired />
+
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <Input variant="faded" label="Apellido materno rep." value={apMatRep} onValueChange={setApMatRep} isRequired />
                                         <Input
                                             label="Email"
                                             variant="faded"
@@ -200,12 +222,6 @@ export default function VinculacionNuevoPage() {
                                             onValueChange={setEmailRep}
                                             isRequired
                                         />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <Input variant="faded" label="Nombres rep. legal" value={nombresRep} onValueChange={setNombresRep} isRequired />
-                                        <Input variant="faded" label="Apellido paterno rep." value={apPatRep} onValueChange={setApPatRep} isRequired />
-                                        <Input variant="faded" label="Apellido materno rep." value={apMatRep} onValueChange={setApMatRep} isRequired />
                                     </div>
                                 </>
                             ) : isPersonaFisica ? (

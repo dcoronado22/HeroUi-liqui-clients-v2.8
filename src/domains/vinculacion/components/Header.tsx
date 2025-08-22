@@ -30,15 +30,19 @@ import { Icon } from "@iconify/react";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { ThemeSwitch } from "@/components/theme-switch"; // tu componente
 import { useVinculacionFlow } from "../context/flow-context";
+import { redirect } from "next/navigation";
 
 type HeaderProps = {
     stepTitle: string;
     stepBadge: string;   // “X de Y”
     stepSubtitle?: string;
     rfc?: string | null;
+    showSteps?: boolean;
+    showIsCollabsable?: boolean;
+    showRfc?: boolean;
 };
 
-export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc }: HeaderProps) {
+export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSteps = true, showIsCollabsable = true, showRfc = true }: HeaderProps) {
     const flow = useVinculacionFlow();
     const isAuth = useIsAuthenticated();
     const { instance } = useMsal();
@@ -46,6 +50,7 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc }: Head
     const account = instance.getActiveAccount() ?? instance.getAllAccounts()[0] ?? null;
     const displayName = account?.name || account?.username || "Usuario";
     const email = account?.username || "";
+    const name = account?.name || "Usuario";
 
     const logout = () => {
         instance.logoutRedirect({ postLogoutRedirectUri: "/" }).catch(console.error);
@@ -84,7 +89,7 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc }: Head
                 />
             </NavbarBrand>
 
-            <Tooltip content={flow.sidebarCollapsed ? "Mostrar pasos" : "Ocultar pasos"}>
+            {showIsCollabsable && (<Tooltip content={flow.sidebarCollapsed ? "Mostrar pasos" : "Ocultar pasos"}>
                 <Button
                     isIconOnly
                     variant="light"
@@ -96,15 +101,15 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc }: Head
                     className=" border border-default-100 dark:border-default-100/40 shadow-xl bg-content2 dark:bg-content2"
                 >
                     <Icon
-                        icon={flow.sidebarCollapsed ? "lucide:panel-right-open" : "lucide:panel-left-close"}
+                        icon={!flow.sidebarCollapsed ? "ic:round-menu-open" : "line-md:close-to-menu-transition"}
                         width={22}
                         className="text-default-600"
                     />
                 </Button>
-            </Tooltip>
+            </Tooltip>)}
 
             {/* CENTRO: breadcrumb */}
-            <NavbarContent
+            {showSteps && (<NavbarContent
                 className="bg-content2 dark:bg-content2 absolute left-1/2 top-1/2 hidden h-12 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 transform items-center px-4 sm:flex rounded-full border border-default-100 dark:border-default-100/40 shadow-lg p-0 lg:px-10"
                 justify="start"
             >
@@ -116,14 +121,15 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc }: Head
                         {stepSubtitle && <Chip size="sm" variant="flat" className="ml-2">{stepSubtitle}</Chip>}
                     </BreadcrumbItem>
                 </Breadcrumbs>
-            </NavbarContent>
+            </NavbarContent>)}
 
             {/* DERECHA */}
+
             <NavbarContent
                 justify="end"
             >
                 {/* RFC */}
-                {flow.rfc && (
+                {flow.rfc && showRfc && (
                     <Chip size="md" variant="flat" color="primary" startContent={<Icon icon={"line-md:account-small"} fontSize={"20"} />} className="font-bold ml-auto flex h-12 max-w-fit items-center gap-3 rounded-full border border-primary-200 dark:border-default-100/40 shadow-lg p-0 lg:px-5">
                         {flow.rfc || ""}
                     </Chip>)}
@@ -167,12 +173,19 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc }: Head
                         </DropdownTrigger>
                         <DropdownMenu aria-label="Acciones de perfil" variant="flat" onAction={(key) => {
                             if (key === "logout") logout();
+                            if (key === "vinculaciones") redirect("/vinculacion/mis-vinculaciones");
                         }}>
                             <DropdownItem key="profile" className="h-14 gap-2">
                                 <p className="font-semibold">Sesión iniciada como</p>
-                                <p className="font-semibold">{email}</p>
+                                <p className="font-semibold">{name}</p>
                             </DropdownItem>
-                            <DropdownItem key="logout" color="danger">
+                            <DropdownItem key="vinculaciones" color="primary" endContent={<Icon icon="line-md:list" />}>
+                                Cambiar empresa
+                            </DropdownItem>
+                            <DropdownItem key="solicitudes" color="primary" endContent={<Icon icon="line-md:file-document" />}>
+                                Mis solicitudes
+                            </DropdownItem>
+                            <DropdownItem key="logout" color="danger" endContent={<Icon icon="line-md:logout" />}>
                                 Cerrar sesión
                             </DropdownItem>
                         </DropdownMenu>

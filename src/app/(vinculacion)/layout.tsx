@@ -7,6 +7,7 @@ import { VinculacionFlowProvider, useVinculacionFlow } from "@/src/domains/vincu
 import { STEPS } from "@/src/domains/vinculacion/steps";
 import { computeHeaderProgress } from "@/src/domains/vinculacion/steps/helpers";
 import RequireAuth from "@/src/shared/auth/RequireAuth";
+import { usePathname } from "next/navigation";
 
 export default function VinculacionLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -18,6 +19,9 @@ export default function VinculacionLayout({ children }: { children: React.ReactN
 
 function VinculacionShell({ children }: { children: React.ReactNode }) {
     const flow = useVinculacionFlow();
+    const pathname = usePathname();
+
+    const isMisVinculaciones = pathname?.startsWith("/vinculacion/mis-vinculaciones");
 
     const progress = React.useMemo(
         () => computeHeaderProgress(STEPS, flow.flags, flow.currentState ?? undefined),
@@ -32,6 +36,9 @@ function VinculacionShell({ children }: { children: React.ReactNode }) {
                     stepBadge={`${progress.index + 1} de ${progress.total}`}
                     stepSubtitle={progress.subtitle}
                     rfc={flow.rfc}
+                    showIsCollabsable={!isMisVinculaciones}
+                    showSteps={!isMisVinculaciones}
+                    showRfc={!isMisVinculaciones}
                 />
                 <main className="flex-1 min-h-0 -mt-6">{children}</main>
             </div>

@@ -1,36 +1,68 @@
 "use client";
 
 import React from "react";
-import { useIsAuthenticated, useMsal } from "@azure/msal-react";
-import { usePathname } from "next/navigation";
+import { useMsal, useIsAuthenticated } from "@azure/msal-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Spinner } from "@heroui/react";
 
-/**
- * Protege rutas: si no hay sesión, dispara loginRedirect una sola vez y
- * recuerda a dónde volver (pathname actual).
- */
 export default function RequireAuth({ children }: { children: React.ReactNode }) {
     const isAuth = useIsAuthenticated();
-    const { instance, inProgress, accounts } = useMsal();
+    const { instance, inProgress } = useMsal();
     const pathname = usePathname();
+    const search = useSearchParams();
+    const router = useRouter();
     const triedRef = React.useRef(false);
 
+    // 1) NO hacer nada mientras MSAL procesa el redirect (limpia el hash aquí)
+    if (inProgress === "handleRedirect") {
+        return (
+            <div className="w-full h-[60vh] flex items-center justify-center">
+                <Spinner label="Procesando inicio de sesión..." />
+            </div>
+        );
+    }
+
+    // 2) Lanzar login cuando NO hay sesión y MSAL está idle
     React.useEffect(() => {
         if (isAuth || triedRef.current) return;
-        // evita loops mientras MSAL está procesando otro flujo
-        if (inProgress === "login" || inProgress === "acquireToken") return;
+        if (inProgress !== "none") return; // esperar a idle
 
         triedRef.current = true;
-        // recuerda a dónde volver
-        sessionStorage.setItem("postLoginRedirect", pathname || "/");
-        instance.loginRedirect().catch((e) => {
-            // si falla, permitimos reintentar en el próximo render
-            triedRef.current = false;
-            console.error("loginRedirect error", e);
-        });
-    }, [isAuth, inProgress, instance, pathname]);
 
-    // Mientras resuelve: UI minimal
+        // guarda ruta + query para volver exactamente ahí
+        const dest =
+            pathname + (search?.toString() ? `?${search.toString()}` : "");
+        sessionStorage.setItem("postLoginRedirect", dest || "/");
+
+        instance
+            .loginRedirect({
+                redirectUri:
+                    typeof window !== "undefined" ? window.location.origin : undefined,
+                scopes: ["openid", "profile"], // Add required scopes here
+            })
+            .catch((e) => {
+                triedRef.current = false;
+                console.error("loginRedirect error", e);
+            });
+    }, [isAuth, inProgress, instance, pathname, search]);
+
+    // 3) Ya con sesión y MSAL idle, vuelve al destino y limpia el hash si quedara alguno
+    React.useEffect(() => {
+        if (!isAuth || inProgress !== "none") return;
+
+        const dest = sessionStorage.getItem("postLoginRedirect");
+        if (dest && dest !== window.location.pathname + window.location.search) {
+            sessionStorage.removeItem("postLoginRedirect");
+            router.replace(dest);
+            return;
+        }
+
+        // Fallback: si quedara fragmento por cualquier razón, límpialo
+        if (window.location.hash) {
+            window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
+    }, [isAuth, inProgress, router]);
+
     if (!isAuth) {
         return (
             <div className="w-full h-[60vh] flex items-center justify-center">
