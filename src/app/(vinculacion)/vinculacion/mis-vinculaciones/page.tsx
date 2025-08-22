@@ -2,14 +2,21 @@
 
 import * as React from "react";
 import {
-    Card, CardBody, CardHeader, Button, Chip, Spinner, Image
+    Card, CardBody, CardHeader, Button, Chip, Spinner, Image, Progress,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { redirect, useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import { EmpresasService, type Empresa } from "@/src/domains/vinculacion/services/empresas.service";
 import { useMsal } from "@azure/msal-react";
 
-function SegmentedProgressBar({ percent, color = "primary" }: { percent: number; color?: "primary" | "success" | "warning" | "danger" }) {
+/** Barra segmentada compacta (con % al final) */
+function SegmentedProgressBar({
+    percent,
+    color = "primary",
+}: {
+    percent: number;
+    color?: "primary" | "success" | "warning" | "danger";
+}) {
     const segments = 10;
     const filled = Math.max(0, Math.min(segments, Math.ceil((percent / 100) * segments)));
     return (
@@ -17,11 +24,12 @@ function SegmentedProgressBar({ percent, color = "primary" }: { percent: number;
             {Array.from({ length: segments }).map((_, i) => (
                 <div
                     key={i}
-                    className={`h-3 flex-1 rounded-sm transition-colors`}
+                    className="h-3 flex-1 rounded-sm transition-colors"
                     style={{
-                        background: i < filled
-                            ? `hsl(var(--heroui-${color}))`
-                            : `hsl(var(--heroui-${color}) / 0.25)`,
+                        background:
+                            i < filled
+                                ? `hsl(var(--heroui-${color}))`
+                                : `hsl(var(--heroui-${color}) / 0.22)`,
                     }}
                 />
             ))}
@@ -30,21 +38,30 @@ function SegmentedProgressBar({ percent, color = "primary" }: { percent: number;
     );
 }
 
-/** Mapea tu enum/estado del back a porcentaje/tono (ajústalo a tu regla real) */
-function getEstadoProgress(idState: number): { percent: number; tone: "primary" | "success" | "warning" | "danger" } {
-    // ejemplo rápido:
-    // 1=Creando, 2=Clave CIEC, 3=Buro, 4=Firma, 5/6=Avales, 8=Selección, 9=Cargue, 10=Vinculado
-    const map: Record<number, number> = { 1: 10, 2: 20, 3: 35, 4: 50, 5: 60, 6: 70, 8: 85, 9: 90, 10: 100 };
+/** Mapea tu enum/estado del back a porcentaje/tono (ajústalo si quieres otra curva) */
+function getEstadoProgress(
+    idState: number
+): { percent: number; tone: "primary" | "success" | "warning" | "danger" } {
+    const map: Record<number, number> = {
+        1: 10,  // Creando
+        2: 20,  // Clave CIEC
+        3: 35,  // Datos Buró
+        4: 50,  // Firma MiFiel
+        5: 60,  // Datos Avales
+        6: 70,  // Firma Avales
+        8: 85,  // Selección clientes
+        9: 90,  // Cargue expediente
+        10: 100 // Vinculado
+    };
     const percent = map[idState] ?? 0;
     const tone = idState === 10 ? "success" : "primary";
     return { percent, tone };
 }
 
 export default function MisVinculacionesPage() {
-    const router = useRouter();
     const { instance } = useMsal();
     const account = instance.getActiveAccount() ?? instance.getAllAccounts()[0] ?? null;
-    const email = account?.idTokenClaims?.outputEmail as string || "";
+    const email = (account?.idTokenClaims as any)?.outputEmail as string || "";
 
     const [loading, setLoading] = React.useState(true);
     const [empresas, setEmpresas] = React.useState<Empresa[]>([]);
@@ -65,11 +82,12 @@ export default function MisVinculacionesPage() {
                 if (active) setLoading(false);
             }
         })();
-        return () => { active = false; };
+        return () => {
+            active = false;
+        };
     }, [email]);
 
     const goNuevo = () => redirect("/vinculacion/nuevo");
-
     const openVinculacion = (e: Empresa) => {
         redirect(`/vinculacion/${e.id}?rfc=${encodeURIComponent(e.rfc)}`);
     };
@@ -91,54 +109,96 @@ export default function MisVinculacionesPage() {
                 <Button color="primary" onPress={goNuevo} startContent={<Icon icon="lucide:plus" />}>
                     Crear nueva vinculación
                 </Button>
-                <Button onClick={() => console.log(account)}>test</Button>
             </div>
         );
     }
 
     return (
-        <div className="w-full h-full px-4 py-6 flex justify-center">
-            <div className="w-full h-full flex items-center justify-center">
-                <Card className="w-full max-w-3xl mb-20">
-                    <CardHeader className="flex items-center justify-center">
-                        <div className="flex items-center gap-2">
-                            <Icon icon="lucide:folder-cog" className="text-2xl" />
-                            <div className="font-semibold text-lg">Mis vinculaciones</div>
-                        </div>
-                    </CardHeader>
-                    <div className="w-full h-px bg-divider" />
-                    <CardBody className="flex flex-col gap-3">
-                        {empresas.map((e) => {
-                            const { percent, tone } = getEstadoProgress(e.idState);
-                            return (
-                                <Card
-                                    isPressable
-                                    key={e.id}
-                                    shadow="sm"
-                                    className="cursor-pointer hover:shadow-md transition-shadow py-3"
-                                    onPress={() => openVinculacion(e)}
-                                >
-                                    <CardBody className="gap-3">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <div className="font-semibold">{e.rfc}</div>
-                                                <div className="text-small text-default-500">{e.nombreContribuyente}</div>
-                                            </div>
-                                            <Chip variant="flat" color={e.idState === 10 ? "success" : "primary"}>
-                                                {e.descriptionState}
-                                            </Chip>
-                                        </div>
-                                        <SegmentedProgressBar percent={percent} color={tone} />
-                                    </CardBody>
-                                </Card>
-                            );
-                        })}
+        <div className="mx-auto w-full max-w-6xl px-4 py-8">
+            {/* Header tipo dashboard */}
+            <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold">Mis vinculaciones</h1>
+                    <p className="text-default-500">
+                        Tienes {empresas.length} {empresas.length === 1 ? "proceso" : "procesos"} en curso.
+                    </p>
+                </div>
+                <Button color="primary" startContent={<Icon icon="lucide:plus" />} onPress={goNuevo}>
+                    Nueva vinculación
+                </Button>
+            </div>
 
-                        <div className="pt-2">
-                            <Button fullWidth color="primary" onPress={goNuevo} startContent={<Icon icon="lucide:plus" />}>
-                                Crear nueva vinculación
-                            </Button>
-                        </div>
+            {/* Lista */}
+            <div className="flex flex-col gap-3">
+                {empresas.map((e) => {
+                    const { percent, tone } = getEstadoProgress(e.idState);
+                    const done = e.idState === 10;
+
+                    return (
+                        <Card
+                            key={e.id}
+                            shadow="sm"
+                            className="border border-default-200 bg-content1/60 hover:bg-content1 transition-colors cursor-pointer"
+                            isPressable
+                            onPress={() => openVinculacion(e)}
+                        >
+                            <CardHeader className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-large bg-content2 flex items-center justify-center">
+                                        <Icon
+                                            icon={
+                                                done
+                                                    ? "line-md:check-all"
+                                                    : e.idState >= 8
+                                                        ? "lucide:list-checks"
+                                                        : e.idState >= 4
+                                                            ? "lucide:signature"
+                                                            : e.idState >= 3
+                                                                ? "lucide:file-text"
+                                                                : e.idState >= 2
+                                                                    ? "lucide:key-round"
+                                                                    : "lucide:clipboard-edit"
+                                            }
+                                            className={done ? "text-success" : "text-primary"}
+                                            width={20}
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold">{e.rfc}</div>
+                                        <div className="text-small text-default-500">{e.nombreContribuyente}</div>
+                                    </div>
+                                </div>
+
+                                <Chip
+                                    variant="flat"
+                                    color={done ? "success" : "primary"}
+                                    startContent={<Icon icon={done ? "line-md:check-all" : "lucide:clock"} />}
+                                    className="capitalize"
+                                >
+                                    {e.descriptionState}
+                                </Chip>
+                            </CardHeader>
+
+                            <CardBody className="pt-0">
+                                <div className="mb-1 flex items-center justify-between text-small">
+                                    <span>Progreso</span>
+                                    <span className="text-default-500 tabular-nums">{percent}%</span>
+                                </div>
+                                <SegmentedProgressBar percent={percent} color={tone} />
+                            </CardBody>
+                        </Card>
+                    );
+                })}
+
+                {/* CTA “Agregar nuevo” al final (borde punteado) */}
+                <Card
+                    className="mt-2 border border-dashed border-default-300 bg-content1/40 hover:bg-content1 transition-colors"
+                    isPressable
+                    onPress={goNuevo}
+                >
+                    <CardBody className="h-24 flex items-center justify-center gap-2">
+                        <Icon icon="lucide:plus" />
+                        <span className="font-medium">Agregar nueva vinculación</span>
                     </CardBody>
                 </Card>
             </div>
