@@ -44,7 +44,41 @@ export type CrearVinculacionRes = {
     };
 };
 
+export type GetDocumentosExpedienteBody = {
+    FolderId: string;
+    Rfc: string;
+    Id: string;
+};
 
+export type DocumentoExpediente = {
+    name: string;
+    document_id: number;
+    status: string;
+    comments: string | null;
+    valid_until: string | null;
+    url_pre: string | null;
+    files: { filename: string; file_id: number }[];
+};
+
+export type GetDocumentosExpedienteRes = {
+    payload: {
+        document_list: DocumentoExpediente[];
+        messages: any;
+        reasonCode: number;
+        succeeded: boolean;
+        messages_validation: any;
+    };
+    documentsIsValid: boolean;
+    escrituraDataValida: boolean;
+    apoderadoLegalDataValida: boolean;
+    desembolsoDataValida: boolean;
+    camposInvalidos: any[];
+    id: string | null;
+    token: string | null;
+    succeeded: boolean;
+    reasonCode: { value: number; description?: string };
+    messages: any[];
+};
 
 export const VinculacionService = {
     async crear(body: CrearVinculacionBody) {
@@ -106,8 +140,6 @@ export const VinculacionService = {
         });
     },
 
-
-
     async crearExpedienteAzul(params: {
         id: string;
         rfc: string;
@@ -143,6 +175,14 @@ export const VinculacionService = {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(params),
+        });
+    },
+
+    async getDocumentosExpediente(payload: GetDocumentosExpedienteBody) {
+        return apiCall<GetDocumentosExpedienteRes>(`${BASE}/GetDocumentosExpediente`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
         });
     },
 
@@ -185,8 +225,4 @@ export const VinculacionService = {
             body: payload,
         });
     },
-
-
-
-
 };

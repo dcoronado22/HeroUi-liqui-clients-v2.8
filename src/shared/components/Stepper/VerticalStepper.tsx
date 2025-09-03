@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn, Progress, Tooltip } from "@heroui/react";
+import { Badge, Chip, cn, Progress, Tooltip } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { LazyMotion, domAnimation, m } from "framer-motion";
 import type { StepperPropsBase, StepId } from "@/src/shared/types/stepper";
@@ -54,12 +54,12 @@ export default function VerticalStepper<TCtx = any>({
                             isActive(i) ? "active" : isDone(i) ? "complete" : "inactive";
 
                         return (
-                            <li key={s.id} className="relative">
+                            <m.li key={s.id} className="relative">
                                 {/* Conector vertical mejorado */}
                                 {!hideConnectors && i < visible.length - 1 && (
                                     <div
                                         aria-hidden="true"
-                                        className="pointer-events-none absolute left-[27px] top-[65px] w-[1px] bg-gradient-to-b from-default-200 to-default-100 dark:from-default-300/40 dark:to-default-200/20"
+                                        className="pointer-events-none absolute left-[31px] top-[63px] w-[1px] bg-gradient-to-b from-default-200 to-default-100 dark:from-default-300/40 dark:to-default-200/20"
                                         style={{ height: "calc(100%)" }}
                                     >
                                         <m.div
@@ -118,12 +118,29 @@ export default function VerticalStepper<TCtx = any>({
                                             },
                                         }}
                                     >
-                                        <Icon
-                                            icon={s.icon || "solar:dotpoints-bold"}
-                                            width={20}
-                                            height={20}
-                                            className="transition-all duration-200 group-hover:scale-110 group-active:scale-95"
-                                        />
+                                        {status === "complete" ? (
+                                            <Badge
+                                                isOneChar
+                                                color="success"
+                                                content={<Icon icon="mdi:check-bold" color="white" />}
+                                                placement="bottom-right"
+                                                className="translate-x-4 translate-y-4"
+                                            >
+                                                <Icon
+                                                    icon={s.icon || "solar:dotpoints-bold"}
+                                                    width={20}
+                                                    height={20}
+                                                    className="transition-all duration-200 group-hover:scale-110 group-active:scale-95"
+                                                />
+                                            </Badge>
+                                        ) : (
+                                            <Icon
+                                                icon={s.icon || "solar:dotpoints-bold"}
+                                                width={20}
+                                                height={20}
+                                                className="transition-all duration-200 group-hover:scale-110 group-active:scale-95"
+                                            />
+                                        )}
                                     </m.div>
 
                                     {/* Texto con mejoras tipográficas */}
@@ -145,6 +162,7 @@ export default function VerticalStepper<TCtx = any>({
                                             >
                                                 {s.title}
                                             </m.span>
+
                                             {disabled && (
                                                 <Tooltip content="Completa los pasos previos" placement="right" delay={300}>
                                                     <Icon
@@ -171,7 +189,7 @@ export default function VerticalStepper<TCtx = any>({
                                         )}
                                     </div>
                                 </button>
-                            </li>
+                            </m.li>
                         );
                     })}
                 </ol>
