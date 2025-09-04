@@ -60,6 +60,13 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
         instance.logoutRedirect({ postLogoutRedirectUri: "/" }).catch(console.error);
     };
 
+    // NUEVO: helpers para badge del expediente
+    const expedientePct = flow.expedientePct;
+    const badgeColor =
+        expedientePct == null ? undefined :
+            expedientePct === 0 ? "default" :
+                expedientePct < 100 ? "warning" : "success";
+
     return (
         <>
             <Navbar
@@ -89,23 +96,8 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
                     </Button>
                 </Tooltip>)}
 
-                {/* CENTRO: breadcrumb */}
-                {/* {showSteps && (<NavbarContent
-                    className="bg-content2 dark:bg-content2 absolute left-1/2 top-1/2 hidden h-12 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 transform items-center px-4 sm:flex rounded-full border border-default-100 dark:border-default-100/40 shadow-lg p-0 lg:px-10"
-                    justify="start"
-                >
-                    <Breadcrumbs size="sm" itemClasses={{ separator: "px-1 text-default-400", item: "text-default-600" }}>
-                        <BreadcrumbItem>Vinculación</BreadcrumbItem>
-                        <BreadcrumbItem isCurrent>
-                            {stepTitle}
-                            <Chip size="sm" color="primary" className="ml-2">{stepBadge}</Chip>
-                            {stepSubtitle && <Chip size="sm" variant="flat" className="ml-2">{stepSubtitle}</Chip>}
-                        </BreadcrumbItem>
-                    </Breadcrumbs>
-                </NavbarContent>)} */}
-
                 <NavbarBrand
-                    className={`bg-content2 dark:bg-content2 absolute left-1/2 top-1/2 hidden h-12 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 transform items-center px-4 sm:flex rounded-full border border-default-100 dark:border-default-100/40 shadow-lg p-0 ${flow.rfc && showRfc ? "lg:pl-8" : "lg:px-10"}`}
+                    className={`bg-content2 dark:bg-content2 absolute left-1/2 top-1/2 hidden h-12 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 transform items-center px-4 sm:flex rounded-full border border-default-300 dark:border-default-100/40 shadow-lg p-0 lg:px-10`}
                 >
                     {/* Light mode */}
                     <Image
@@ -130,43 +122,73 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
                         width={70}
                         className="dark:filter-none filter invert"
                     />
-                    {flow.rfc && showRfc && (
-                        <Chip size="md" variant="flat" color="primary" startContent={<Icon icon={"line-md:account-small"} fontSize={"20"} />} className="font-bold ml-5 flex h-12 max-w-fit items-center gap-3 rounded-full border border-primary-200 dark:border-default-100/40 shadow-lg p-0 lg:px-5">
-                            {flow.rfc || ""}
-                        </Chip>)}
+
                 </NavbarBrand>
 
                 {/* DERECHA */}
                 <NavbarContent className="ml-auto" justify="end">
-                    <NavbarItem className="hidden sm:flex">
-                        <Tooltip content="Expediente" placement="bottom">
-                            <Button
-                                radius="full"
-                                variant="light"
-                                onPress={() => setIsExpedienteOpen(true)}
-                                className="lg:bg-content2 lg:dark:bg-content2 flex h-12 min-w-50 items-center gap-3 rounded-full border border-default-100 dark:border-default-100/40 shadow-lg p-0 lg:px-3"
-                            >
-                                <Icon className="text-primary mx-1" icon="line-md:folder" width={35} />
-                                <Divider orientation="vertical" className="h-6" />
-                                <Progress
-                                    aria-label="Avance del expediente"
-                                    className="max-w-md pr-3 pl-1"
-                                    color="success"
-                                    showValueLabel
+                    {/* Mostrar botón solo si hay folderId */}
+                    {flow.folderId && (
+                        <NavbarItem>
+                            {typeof expedientePct === "number" ? (
+                                <Badge
+                                    color="default"
+                                    content={`${expedientePct}%`}
                                     size="sm"
-                                    value={70}
-                                />
-                            </Button>
-                        </Tooltip>
-                    </NavbarItem>
+                                >
+                                    <Tooltip
+                                        content={`Expediente (${expedientePct}%)`}
+                                        placement="bottom"
+                                    >
+                                        <Button
+                                            isIconOnly
+                                            radius="full"
+                                            variant="light"
+                                            onPress={() => setIsExpedienteOpen(true)}
+                                            className="h-12 w-12 p-0 bg-content2 dark:bg-content2 border border-default-300 dark:border-default-100/40 shadow-lg"
+                                        >
+                                            <Icon className="text-primary" icon="line-md:folder-multiple-twotone" width={22} />
+                                        </Button>
+                                    </Tooltip>
+                                </Badge>
+                            ) : (
+                                <Badge color="default" content="N/A" size="sm">
+                                    <Tooltip
+                                        content="Expediente (N/A)"
+                                        placement="bottom"
+                                    >
+                                        <Button
+                                            isIconOnly
+                                            radius="full"
+                                            variant="light"
+                                            onPress={() => setIsExpedienteOpen(true)}
+                                            className="h-12 w-12 p-0 bg-content2 dark:bg-content2 border border-default-300 dark:border-default-100/40 shadow-lg"
+                                        >
+                                            <Icon className="text-primary" icon="line-md:folder-multiple-twotone" width={22} />
+                                        </Button>
+                                    </Tooltip>
+                                </Badge>
+                            )}
+                        </NavbarItem>
+                    )}
+
+                    {flow.rfc && showRfc && (
+                        <Chip
+                            size="md"
+                            variant="flat"
+                            color="primary"
+                            startContent={<Icon icon={"line-md:account-small"} fontSize={"20"} />}
+                            className="font-bold ml-0 flex h-12 max-w-fit items-center gap-3 rounded-full border border-primary-200 dark:border-default-100/40 shadow-lg p-0 lg:px-5"
+                        >
+                            {flow.rfc || ""}
+                        </Chip>
+                    )}
                 </NavbarContent>
 
                 <NavbarContent
-                    className="lg:bg-content2 lg:dark:bg-content2 ml-auto flex h-12 max-w-fit items-center gap-3 rounded-full border border-default-100 dark:border-default-100/40 shadow-lg p-0 lg:px-5"
+                    className="lg:bg-content2 lg:dark:bg-content2 ml-auto flex h-12 max-w-fit items-center gap-3 rounded-full border border-default-200 dark:border-default-200/40 shadow-lg p-0 lg:px-5"
                     justify="end"
                 >
-
-
                     {/* Darkmode toggle */}
                     <NavbarItem className="hidden sm:flex">
                         <ThemeSwitch />
@@ -184,20 +206,11 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
                     </NavbarItem>
 
                     {/* Avatar con menú */}
-                    <NavbarItem className="px-2">
+                    <NavbarItem className="pl-2">
                         <Dropdown placement="bottom-end">
                             <DropdownTrigger>
-                                <button className="mt-1 h-8 w-8 transition-transform outline-hidden">
-                                    <Badge
-                                        className="border-transparent"
-                                        color="success"
-                                        content=""
-                                        placement="bottom-right"
-                                        shape="circle"
-                                        size="sm"
-                                    >
-                                        <Avatar size="sm" name={displayName} showFallback />
-                                    </Badge>
+                                <button className="h-8 w-8 transition-transform outline-hidden">
+                                    <Avatar showFallback src="https://images.unsplash.com/broken" size="sm" className="-mt-2" />
                                 </button>
                             </DropdownTrigger>
                             <DropdownMenu aria-label="Acciones de perfil" variant="flat" onAction={(key) => {
@@ -226,9 +239,9 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
             <StepExpedienteModal
                 isOpen={isExpedienteOpen}
                 onClose={() => setIsExpedienteOpen(false)}
-                folderId={"335014"}
-                rfc={"OSM0302038B5"}
-                id={"da04311e-f827-4c32-900a-70dd3bbe8342"}
+                folderId={flow.folderId ? String(flow.folderId) : ""} // NUEVO
+                rfc={flow.rfc || ""}  // NUEVO
+                id={flow.id || ""}    // NUEVO
             />
         </>
     );

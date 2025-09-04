@@ -12,6 +12,8 @@ type FlowState = {
     rfc: string | null;
     currentState: number | null;
     flags: VinculacionFlags;
+    folderId: number | null; // NUEVO
+    expedientePct: number | null; // NUEVO
     sidebarCollapsed: boolean;
     toggleSidebar: () => void;
 };
@@ -23,9 +25,10 @@ type Actions = {
         rfc: string;
         state: number;
         flags: VinculacionFlags;
+        folderId?: number | null; // NUEVO
     }) => void;
+    setExpedientePct: (pct: number | null) => void; // NUEVO
     reset: () => void;
-    // 🔥 NUEVO: Método para verificar si necesita reset
     needsReset: (newId: string, newRfc?: string) => boolean;
 };
 
@@ -34,6 +37,8 @@ const initialState: FlowState = {
     rfc: null,
     currentState: null,
     flags: {},
+    folderId: null, // NUEVO
+    expedientePct: null, // NUEVO
     sidebarCollapsed: false,
     toggleSidebar: () => { },
 };
@@ -54,7 +59,8 @@ export function VinculacionFlowProvider({ children }: { children: React.ReactNod
         id: string;
         rfc: string;
         state: number;
-        flags: VinculacionFlags
+        flags: VinculacionFlags;
+        folderId?: number | null; // NUEVO
     }) => {
         console.log(`Hydrating context with: id=${d.id}, rfc=${d.rfc}, state=${d.state}`);
         setState((prev) => ({
@@ -62,26 +68,24 @@ export function VinculacionFlowProvider({ children }: { children: React.ReactNod
             id: d.id,
             rfc: d.rfc,
             currentState: d.state,
-            flags: d.flags
+            flags: d.flags,
+            folderId: d.folderId ?? prev.folderId ?? null, // NUEVO
         }));
     }, []);
+
+    const setExpedientePct = React.useCallback((pct: number | null) => {
+        setState((prev) => ({ ...prev, expedientePct: pct }));
+    }, []); // NUEVO
 
     const reset = React.useCallback(() => {
         console.log("Resetting vinculacion context");
         setState({ ...initialState, sidebarCollapsed, toggleSidebar });
     }, [sidebarCollapsed, toggleSidebar]);
 
-    // 🔥 NUEVO: Método para verificar si necesita reset
     const needsReset = React.useCallback((newId: string, newRfc?: string) => {
-        // Si no hay datos en el contexto, no necesita reset
         if (!state.id && !state.rfc) return false;
-
-        // Si el ID es diferente, necesita reset
         if (state.id && state.id !== newId) return true;
-
-        // Si el RFC es diferente y está definido, necesita reset
         if (newRfc && state.rfc && state.rfc !== newRfc) return true;
-
         return false;
     }, [state.id, state.rfc]);
 
@@ -91,6 +95,7 @@ export function VinculacionFlowProvider({ children }: { children: React.ReactNod
         toggleSidebar,
         setIdRfc,
         hydrateFromDetalle,
+        setExpedientePct, // NUEVO
         reset,
         needsReset
     }), [
@@ -99,6 +104,7 @@ export function VinculacionFlowProvider({ children }: { children: React.ReactNod
         toggleSidebar,
         setIdRfc,
         hydrateFromDetalle,
+        setExpedientePct, // NUEVO
         reset,
         needsReset
     ]);

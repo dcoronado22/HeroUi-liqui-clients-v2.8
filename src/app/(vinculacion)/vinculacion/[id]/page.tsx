@@ -115,7 +115,29 @@ export default function VinculacionCasePage() {
                 rfc: v.datosRegistroVinculacion?.rfc,
                 state: v.state,
                 flags,
+                folderId: v?.datosExpedienteAzul?.folder_id ?? null, // NUEVO
             });
+
+            // NUEVO: calcular % del expediente si hay folderId
+            const folderId = v?.datosExpedienteAzul?.folder_id;
+            if (folderId && v?.datosRegistroVinculacion?.rfc && v?.id) {
+                try {
+                    const docsRes = await VinculacionService.getDocumentosExpediente({
+                        FolderId: String(folderId),
+                        Rfc: v.datosRegistroVinculacion.rfc,
+                        Id: v.id
+                    });
+                    const list = docsRes?.payload?.document_list || [];
+                    const total = list.length;
+                    const done = list.filter((d: any) => String(d?.status || "").toLowerCase() === "valid").length;
+                    const pct = total ? Math.round((done / total) * 100) : 0;
+                    flow.setExpedientePct(pct);
+                } catch {
+                    flow.setExpedientePct(null);
+                }
+            } else {
+                flow.setExpedientePct(null);
+            }
 
             setErrorMsg(null);
         } catch (error) {

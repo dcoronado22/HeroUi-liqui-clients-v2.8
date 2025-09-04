@@ -9,8 +9,11 @@ import {
     Dropdown,
     DropdownTrigger,
     DropdownMenu,
-    DropdownItem
+    DropdownItem,
+    Tooltip,
 } from "@heroui/react";
+import type { DocumentoExpediente } from "@/src/domains/vinculacion/services/vinculacion.service";
+import { VinculacionService } from "@/src/domains/vinculacion/services/vinculacion.service";
 
 // Define file type
 interface UploadedFile {
@@ -23,11 +26,53 @@ interface UploadedFile {
     uploadedAt: Date;
 }
 
-export const DocumentCard = () => {
+export const DocumentCard: React.FC<{ folderId: string; doc: DocumentoExpediente }> = ({ folderId, doc }) => {
     const [files, setFiles] = React.useState<UploadedFile[]>([]);
     const [isDragging, setIsDragging] = React.useState(false);
     const [isUploading, setIsUploading] = React.useState(false);
+    const [fetchingFileId, setFetchingFileId] = React.useState<number | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    // NEW: refs y mapa de overflow por archivo
+    const nameRefs = React.useRef<Record<string, HTMLParagraphElement | null>>({});
+    const [overflowMap, setOverflowMap] = React.useState<Record<string, boolean>>({});
+
+    const setNameRef = (id: string) => (el: HTMLParagraphElement | null) => {
+        nameRefs.current[id] = el;
+    };
+
+    React.useLayoutEffect(() => {
+        const entries = Object.entries(nameRefs.current);
+        const next: Record<string, boolean> = {};
+        const ros: ResizeObserver[] = [];
+
+        entries.forEach(([id, el]) => {
+            if (!el) return;
+            const calc = () => {
+                const isOverflow = el.scrollWidth > el.clientWidth;
+                setOverflowMap(prev => (prev[id] === isOverflow ? prev : { ...prev, [id]: isOverflow }));
+            };
+            calc();
+            const ro = new ResizeObserver(calc);
+            ro.observe(el);
+            ros.push(ro);
+        });
+
+        return () => ros.forEach(ro => ro.disconnect());
+    }, [files]);
+
+    React.useEffect(() => {
+        // cleanup: revocar URLs al desmontar
+        return () => {
+            files.forEach(f => URL.revokeObjectURL(f.url));
+        };
+    }, [files]);
+
+    // NUEVO: estado local para archivos del servidor y sync con props
+    const [serverFiles, setServerFiles] = React.useState(doc?.files ?? []);
+    React.useEffect(() => {
+        setServerFiles(doc?.files ?? []);
+    }, [doc?.files]);
 
     // Handle drag events
     const handleDragEnter = (e: React.DragEvent) => {
@@ -153,14 +198,90 @@ export const DocumentCard = () => {
         }
     };
 
+    const getPreSignedUrl = async (fileId: number) => {
+        try {
+            setFetchingFileId(fileId);
+            const res = await VinculacionService.downloadFileExpediente({
+                Folderid: String(folderId),
+                FileId: String(fileId),
+            });
+            return res?.preSignedUrl;
+        } catch (e) {
+            console.error("Error al obtener preSignedUrl", e);
+            return null;
+        } finally {
+            setFetchingFileId(null);
+        }
+    };
+
+    const handleViewServerFile = async (fileId: number) => {
+        const url = await getPreSignedUrl(fileId);
+        if (url) window.open(url, "_blank", "noopener,noreferrer");
+    };
+
+    const handleDownloadServerFile = async (fileId: number, filename?: string) => {
+        const url = await getPreSignedUrl(fileId);
+        if (!url) return;
+        const a = document.createElement("a");
+        a.href = url;
+        if (filename) a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
+    // NUEVO: eliminar archivo del servidor
+    const handleDeleteServerFile = async (fileId: number) => {
+        try {
+            setFetchingFileId(fileId);
+            const res = await VinculacionService.deleteFileExpediente({
+                Folderid: String(folderId),
+                FileId: String(fileId),
+            });
+            if (res?.succeeded) {
+                setServerFiles(prev => prev.filter(f => f.file_id !== fileId));
+            }
+        } catch (e) {
+            console.error("Error al eliminar archivo del expediente", e);
+        } finally {
+            setFetchingFileId(null);
+        }
+    };
+
     return (
         <Card className="shadow-md">
             <CardBody className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Documentos</h2>
 
+                {/* NUEVO: Formato de referencia (url_pre) */}
+                {doc.url_pre && (
+                    <Card className="p-3 mb-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <h3 className="text-md font-medium">Formato pre-llenado</h3>
+                                <Tooltip content="Este es el formato que debes completar y subir" placement="top" offset={6}>
+                                    <Icon icon="line-md:alert-circle-loop" className="ml-2 text-primary text-xl" />
+                                </Tooltip>
+                            </div>
+                            <Button
+                                as="a"
+                                href={doc.url_pre}
+                                download
+                                target="_blank"
+                                size="sm"
+                                color="primary"
+                                variant="ghost"
+                                startContent={<Icon icon="solar:download-linear" />}
+                            >
+                                Descargar
+                            </Button>
+                        </div>
+                    </Card>
+                )}
+
                 {/* Upload area */}
                 <div
-                    className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center transition-colors duration-200 ${isDragging
+                    className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center transition-colors duration-200 bg-primary-50 ${isDragging
                         ? 'border-primary bg-primary-50'
                         : 'border-default-200 hover:border-primary-300'
                         }`}
@@ -219,28 +340,98 @@ export const DocumentCard = () => {
                     )}
                 </AnimatePresence>
 
-                {/* File list */}
-                {files.length > 0 && (
-                    <div className="mt-6">
+                {/* File list (unificada: servidor + locales) */}
+                {(((doc?.status?.toLowerCase() !== "preparing") && serverFiles.length > 0) || files.length > 0) && (
+                    <div>
                         <h3 className="text-md font-medium mb-3">Archivos subidos</h3>
                         <div className="space-y-3">
+                            {/* Archivos del servidor */}
+                            {(doc?.status?.toLowerCase() !== "preparing") && serverFiles.map((f) => (
+                                <div
+                                    key={`srv-${f.file_id}`}
+                                    className="flex items-center justify-between p-3 rounded-md border border-default-200 bg-content1"
+                                >
+                                    <div className="flex items-center min-w-0">
+                                        <div className="h-10 w-10 rounded bg-default-100 flex items-center justify-center mr-3 shrink-0">
+                                            <Icon icon="lucide:file" className="text-xl text-default-600" />
+                                        </div>
+                                        <Tooltip content={f.filename} placement="top" offset={6}>
+                                            <p className="font-medium text-sm leading-tight truncate max-w-[70ch]">
+                                                {f.filename}
+                                            </p>
+                                        </Tooltip>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant="flat"
+                                            startContent={<Icon icon="lucide:eye" />}
+                                            isDisabled={fetchingFileId === f.file_id}
+                                            isLoading={fetchingFileId === f.file_id}
+                                            onPress={() => handleViewServerFile(f.file_id)}
+                                        >
+                                            Ver
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="light"
+                                            startContent={<Icon icon="lucide:download" />}
+                                            isDisabled={fetchingFileId === f.file_id}
+                                            isLoading={fetchingFileId === f.file_id}
+                                            onPress={() => handleDownloadServerFile(f.file_id, f.filename)}
+                                        >
+                                            Descargar
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            color="danger"
+                                            variant="light"
+                                            startContent={<Icon icon="lucide:trash-2" />}
+                                            isDisabled={fetchingFileId === f.file_id}
+                                            onPress={() => handleDeleteServerFile(f.file_id)}
+                                        >
+                                            Eliminar
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* Archivos locales */}
                             <AnimatePresence>
                                 {files.map((file) => (
                                     <motion.div
-                                        key={file.id}
+                                        key={`loc-${file.id}`}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                                         transition={{ duration: 0.2 }}
                                         className="flex items-center justify-between p-3 rounded-md border border-default-200 bg-content1"
                                     >
-                                        <div className="flex items-center">
-                                            <div className="h-10 w-10 rounded bg-default-100 flex items-center justify-center mr-3">
+                                        <div className="flex items-center min-w-0">
+                                            <div className="h-10 w-10 rounded bg-default-100 flex items-center justify-center mr-3 shrink-0">
                                                 <Icon icon={getFileIcon(file.type)} className="text-xl text-default-600" />
                                             </div>
-                                            <div>
-                                                <p className="font-medium text-sm line-clamp-1">{file.name}</p>
-                                                <p className="text-xs text-default-400">
+                                            <div className="min-w-0">
+                                                {/* NEW: tooltip condicional cuando se trunca */}
+                                                {overflowMap[file.id] ? (
+                                                    <Tooltip content={file.name} placement="top" offset={6}>
+                                                        <p
+                                                            ref={setNameRef(file.id)}
+                                                            className="font-medium text-sm leading-tight truncate"
+                                                        >
+                                                            {file.name}
+                                                        </p>
+                                                    </Tooltip>
+                                                ) : (
+                                                    <p
+                                                        ref={setNameRef(file.id)}
+                                                        className="font-medium text-sm leading-tight truncate"
+                                                    >
+                                                        {file.name}
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-default-400 mt-0.5">
                                                     {formatFileSize(file.size)} • {new Date(file.uploadedAt).toLocaleDateString()}
                                                 </p>
                                             </div>
@@ -292,14 +483,16 @@ export const DocumentCard = () => {
                     </div>
                 )}
 
-                {/* Empty state */}
-                {files.length === 0 && !isUploading && (
-                    <div className="mt-4 text-center py-6">
-                        <p className="text-default-400 text-sm">
-                            No hay documentos subidos aún
-                        </p>
-                    </div>
-                )}
+                {/* Empty state (solo si no hay ni servidor ni locales) */}
+                {files.length === 0 &&
+                    !isUploading &&
+                    !((doc?.status?.toLowerCase() !== "preparing") && serverFiles.length > 0) && (
+                        <div className="mt-4 text-center py-6">
+                            <p className="text-default-400 text-sm">
+                                No hay documentos subidos aún
+                            </p>
+                        </div>
+                    )}
             </CardBody>
         </Card>
     );

@@ -80,6 +80,33 @@ export type GetDocumentosExpedienteRes = {
     messages: any[];
 };
 
+export type DownloadFileExpedienteBody = {
+    Folderid: string; // string esperado por el backend
+    FileId: string;   // string esperado por el backend
+};
+
+export type DownloadFileExpedienteRes = {
+    preSignedUrl: string;
+    id: string | null;
+    token: string | null;
+    succeeded: boolean;
+    reasonCode: { value: number; description?: string };
+    messages: any[];
+};
+
+export type DeleteFileExpedienteBody = {
+    Folderid: string;
+    FileId: string;
+};
+
+export type DeleteFileExpedienteRes = {
+    succeeded: boolean;
+    reasonCode: { value: number; description?: string };
+    messages: any[];
+    id?: string | null;
+    token?: string | null;
+};
+
 export const VinculacionService = {
     async crear(body: CrearVinculacionBody) {
         return apiCall<CrearVinculacionRes>(`${BASE}/Vinculacion`, {
@@ -215,6 +242,22 @@ export const VinculacionService = {
                     liquidezNecesaria: params.liquidezNecesaria,
                 },
             },
+        });
+    },
+
+    async downloadFileExpediente(payload: DownloadFileExpedienteBody) {
+        return apiCall<DownloadFileExpedienteRes>(`${BASE}/DownloadFileExpediente`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    },
+
+    async deleteFileExpediente(payload: DeleteFileExpedienteBody) {
+        return apiCall<DeleteFileExpedienteRes>(`${BASE}/DeleteFileExpediente`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
         });
     },
 
