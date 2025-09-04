@@ -11,6 +11,8 @@ import {
     DropdownMenu,
     DropdownItem,
     Tooltip,
+    Accordion,
+    AccordionItem,
 } from "@heroui/react";
 import type { DocumentoExpediente } from "@/src/domains/vinculacion/services/vinculacion.service";
 import { VinculacionService } from "@/src/domains/vinculacion/services/vinculacion.service";
@@ -140,6 +142,19 @@ export const DocumentCard: React.FC<{ folderId: string; doc: DocumentoExpediente
         }, 1500);
     };
 
+    // NEW: escuchar drop desde las cards de la lista
+    React.useEffect(() => {
+        const handler = (evt: Event) => {
+            const e = evt as CustomEvent<{ documentId: string | number; files: FileList }>;
+            const detail = e.detail;
+            if (!detail) return;
+            if (String(detail.documentId) !== String(doc.document_id)) return;
+            handleFiles(detail.files);
+        };
+        window.addEventListener("expediente:drop-files", handler as EventListener);
+        return () => window.removeEventListener("expediente:drop-files", handler as EventListener);
+    }, [doc?.document_id]);
+
     // Handle file deletion
     const handleDelete = (id: string) => {
         setFiles(prevFiles => {
@@ -251,6 +266,17 @@ export const DocumentCard: React.FC<{ folderId: string; doc: DocumentoExpediente
     return (
         <Card className="shadow-md">
             <CardBody className="p-6">
+
+                {(doc.comments && doc.status == "invalid") && (
+                    <div className="w-1/2 mb-4 -ml-3">
+                        <Accordion variant="splitted">
+                            <AccordionItem key="1" aria-label="Razón rechazo" startContent={<Icon icon="line-md:alert-circle-loop" className="text-danger" />} title="Razón rechazo">
+                                {doc.comments}
+                            </AccordionItem>
+                        </Accordion>
+                    </div>
+                )}
+
                 <h2 className="text-xl font-semibold mb-4">Documentos</h2>
 
                 {/* NUEVO: Formato de referencia (url_pre) */}

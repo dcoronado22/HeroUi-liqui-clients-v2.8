@@ -96,7 +96,7 @@ export default function MisVinculacionesPage() {
         return (
             <div className="w-full h-[70vh] flex flex-col items-center justify-center gap-6">
                 <Spinner label="Cargando tus vinculaciones…" />
-                <Image alt="LiquiCapital" src="/logo.png" width={180} />
+                <Image alt="LiquiCapital" className="dark:filter-none filter invert" src="/logo.png" width={180} />
             </div>
         );
     }

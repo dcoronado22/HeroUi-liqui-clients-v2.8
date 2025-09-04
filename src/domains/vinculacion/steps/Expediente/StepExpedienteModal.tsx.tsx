@@ -19,6 +19,7 @@ import {
     Input,
     Select,
     SelectItem,
+    Tooltip, // NUEVO
 } from "@heroui/react";
 import type { Selection } from "@heroui/react";
 import { DocumentCard } from "./DocumentCard";
@@ -302,6 +303,15 @@ export const StepExpedienteModal: React.FC<StepExpedienteModalProps> = ({
                                         {CATEGORIES.map((cat) => {
                                             const list = groupedByCategory[cat];
                                             const pct = getCompletion(list);
+                                            // NUEVO: conteos y bandera de inválidos
+                                            const total = list.length;
+                                            const validCount = list.filter(d => d.status?.toLowerCase() === "valid").length;
+                                            const missing = Math.max(total - validCount, 0);
+                                            const hasInvalid = list.some(d => {
+                                                const s = d.status?.toLowerCase();
+                                                return s === "invalid" || s === "rejected";
+                                            });
+
                                             return (
                                                 <AccordionItem
                                                     key={cat}
@@ -311,6 +321,25 @@ export const StepExpedienteModal: React.FC<StepExpedienteModalProps> = ({
                                                             <div className="flex items-center gap-2">
                                                                 <Icon icon={pct === 100 ? "line-md:folder-check" : "line-md:folder"} />
                                                                 <span className="font-medium">{cat}</span>
+                                                                {/* NUEVO: chips de totales y faltantes */}
+                                                                <Chip size="sm" variant="flat" className="ml-1">
+                                                                    {total} docs
+                                                                </Chip>
+                                                                <Chip
+                                                                    size="sm"
+                                                                    color={missing > 0 ? "warning" : "success"}
+                                                                    variant="flat"
+                                                                >
+                                                                    {missing} faltan
+                                                                </Chip>
+                                                                {/* NUEVO: indicador de inválidos */}
+                                                                {hasInvalid && (
+                                                                    <Tooltip content="Hay documentos inválidos en esta categoría" placement="top">
+                                                                        <span className="text-danger">
+                                                                            <Icon icon="lucide:alert-triangle" />
+                                                                        </span>
+                                                                    </Tooltip>
+                                                                )}
                                                             </div>
                                                             <div className="flex items-center gap-3">
                                                                 <Progress
