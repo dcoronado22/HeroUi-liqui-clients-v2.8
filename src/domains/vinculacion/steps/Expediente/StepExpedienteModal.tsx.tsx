@@ -3,11 +3,11 @@
 import React from "react";
 import { Icon } from "@iconify/react";
 import {
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerBody,
+    DrawerFooter,
     Button,
     Spinner,
     Badge,
@@ -19,7 +19,7 @@ import {
     Input,
     Select,
     SelectItem,
-    Tooltip, // NUEVO
+    Tooltip,
 } from "@heroui/react";
 import type { Selection } from "@heroui/react";
 import { DocumentCard } from "./DocumentCard";
@@ -198,20 +198,33 @@ export const StepExpedienteModal: React.FC<StepExpedienteModalProps> = ({
     }, [isOpen, loadDocs]);
 
     return (
-        <Modal
+        <Drawer
             isOpen={isOpen}
             onOpenChange={(open) => {
                 if (!open) handleClose();
             }}
-            size="5xl"
-            scrollBehavior="inside"
+            classNames={{
+                base: "sm:data-[placement=right]:m-7 sm:data-[placement=left]:m-2  rounded-medium",
+            }}
+            motionProps={{
+                variants: {
+                    enter: {
+                        opacity: 1,
+                        y: 0,
+                    },
+                    exit: {
+                        y: 100,
+                        opacity: 0,
+
+                    },
+                },
+            }}
+            placement="bottom"
             backdrop="blur"
-            className="min-w-[80%]"
-            placement="top"
         >
-            <ModalContent>
+            <DrawerContent className="max-w-[96.5%] min-h-[93%]">
                 <>
-                    <ModalHeader className="flex items-center gap-2">
+                    <DrawerHeader className="flex items-center gap-2">
                         {selectedDoc ? (
                             <div className="flex items-center gap-2">
                                 <Button
@@ -233,9 +246,9 @@ export const StepExpedienteModal: React.FC<StepExpedienteModalProps> = ({
                                 <span className="font-semibold text-base">Expediente</span>
                             </div>
                         )}
-                    </ModalHeader>
+                    </DrawerHeader>
 
-                    <ModalBody>
+                    <DrawerBody>
                         {/* Controles de búsqueda/filtro y refrescar */}
                         {!selectedDoc && (
                             <div className="mb-2 flex flex-col sm:flex-row gap-2 sm:items-end sm:justify-between mx-2">
@@ -394,9 +407,9 @@ export const StepExpedienteModal: React.FC<StepExpedienteModalProps> = ({
                                 />
                             </div>
                         )}
-                    </ModalBody>
+                    </DrawerBody>
 
-                    <ModalFooter>
+                    <DrawerFooter>
                         <div className="flex w-full items-center justify-between pl-3 pr-2">
                             {/* Izquierda: completitud (oculto mientras carga) */}
                             {!loading && (
@@ -436,9 +449,9 @@ export const StepExpedienteModal: React.FC<StepExpedienteModalProps> = ({
                                 )}
                             </div>
                         </div>
-                    </ModalFooter>
+                    </DrawerFooter>
                 </>
-            </ModalContent>
-        </Modal>
+            </DrawerContent>
+        </Drawer>
     );
 };
