@@ -62,10 +62,6 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
 
     // NUEVO: helpers para badge del expediente
     const expedientePct = flow.expedientePct;
-    const badgeColor =
-        expedientePct == null ? undefined :
-            expedientePct === 0 ? "default" :
-                expedientePct < 100 ? "warning" : "success";
 
     return (
         <>
@@ -132,7 +128,7 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
                         <NavbarItem>
                             {typeof expedientePct === "number" ? (
                                 <Badge
-                                    color="default"
+                                    color="primary"
                                     content={`${expedientePct}%`}
                                     size="sm"
                                 >

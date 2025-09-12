@@ -219,19 +219,17 @@ export const DocumentListItem: React.FC<Props> = ({ doc, onOpen }) => {
                                 </Tooltip>
                             )}
                             <Tooltip content="Ver detalle" placement="top">
-                                <Button
-                                    isIconOnly
-                                    size="sm"
-                                    color="primary"
-                                    variant="flat"
-                                    radius="full"
+                                <div
+                                    role="button"
+                                    className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 hover:bg-primary-200 cursor-pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onOpen();
                                     }}
-                                    startContent={<Icon icon="lucide:eye" />}
                                     aria-label="Ver detalle del documento"
-                                />
+                                >
+                                    <Icon icon="lucide:eye" className="text-primary" />
+                                </div>
                             </Tooltip>
                         </div>
                     </>

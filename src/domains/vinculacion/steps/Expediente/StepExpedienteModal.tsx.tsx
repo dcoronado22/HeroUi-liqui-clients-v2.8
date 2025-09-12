@@ -29,6 +29,8 @@ import {
     VinculacionService
 } from "@/src/domains/vinculacion/services/vinculacion.service";
 import type { DocumentoExpediente } from "@/src/domains/vinculacion/services/vinculacion.service";
+// NUEVO: importar grupos definidos
+import { groups as DOCUMENT_GROUPS } from "@/types/documentsGroup";
 
 type StepExpedienteModalProps = {
     isOpen: boolean;
@@ -55,59 +57,16 @@ const statusToColor = (
     }
 };
 
-// NUEVO: categorías y utilidades
-const CATEGORIES = ["Identidad", "Financieros", "Domicilio", "Fiscales"] as const;
-type CategoryKey = typeof CATEGORIES[number];
+// NUEVO: utilidades para categorización basada en documento mapeado
+const GENERAL_LABEL = "General";
+const normalize = (s?: string | null) =>
+    (s ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
 
-// NUEVO: normalizador de categoría desde múltiples posibles campos
-const normalizeCategory = (raw?: string | null): CategoryKey | null => {
-    if (!raw) return null;
-    const v = raw.toLowerCase();
-    if (v.includes("ident")) return "Identidad";
-    if (v.includes("finan")) return "Financieros";
-    if (v.includes("domic")) return "Domicilio";
-    if (v.includes("fisc")) return "Fiscales";
-    return null;
-};
-
-// NUEVO: obtiene la categoría del documento (estable)
-const getDocCategory = (doc: DocumentoExpediente): CategoryKey => {
-    const anyDoc = doc as any;
-    const candidates: Array<string | undefined> = [
-        anyDoc.category,
-        anyDoc.categoria,
-        anyDoc.section,
-        anyDoc.seccion,
-        anyDoc.group,
-        anyDoc.grupo,
-        anyDoc.document_group,
-        anyDoc.document_category,
-        anyDoc.type,
-        anyDoc.type_name,
-        doc.name
-    ];
-    for (const c of candidates) {
-        const n = normalizeCategory(c);
-        if (n) return n;
-    }
-    // Fallback conservador
-    return "Identidad";
-};
-
-const groupDocsByCategory = (docs: DocumentoExpediente[]) => {
-    const groups: Record<CategoryKey, DocumentoExpediente[]> = {
-        Identidad: [],
-        Financieros: [],
-        Domicilio: [],
-        Fiscales: []
-    };
-    // NUEVO: agrupación estable por categoría real
-    docs.forEach((doc) => {
-        const key = getDocCategory(doc);
-        groups[key].push(doc);
-    });
-    return groups;
-};
 
 const getCompletion = (list: DocumentoExpediente[]) => {
     if (!list.length) return 0;
@@ -152,18 +111,62 @@ export const StepExpedienteModal: React.FC<StepExpedienteModalProps> = ({
         });
     }, [docs, query, statusFilter]);
 
-    // NUEVO: memorizamos agrupación por categoría usando la lista filtrada
-    const groupedByCategory = React.useMemo(() => groupDocsByCategory(filteredDocs), [filteredDocs]);
+    // NUEVO: construir el orden de categorías y el índice de nombres
+    const visibleGroups = React.useMemo(
+        () => DOCUMENT_GROUPS.filter(g => g.visible !== false),
+        []
+    );
+    const categoryOrder = React.useMemo(
+        () => [GENERAL_LABEL, ...visibleGroups.map(g => g.label)], // General primero
+        [visibleGroups]
+    );
+    const nameToCategory = React.useMemo(() => {
+        const map = new Map<string, string>();
+        for (const g of visibleGroups) {
+            for (const dn of g.documents) {
+                map.set(normalize(dn), g.label);
+            }
+        }
+        return map;
+    }, [visibleGroups]);
 
-    // NUEVO: expandir acordeones de categorías que tienen coincidencias con la búsqueda
+    // NUEVO: agrupar por categoría usando el mapeo y fallback "General"
+    const groupedByCategory = React.useMemo(() => {
+        const groupsMap: Record<string, DocumentoExpediente[]> = {};
+        categoryOrder.forEach(lbl => (groupsMap[lbl] = []));
+        for (const doc of filteredDocs) {
+            const n = normalize(doc.name);
+            let cat = nameToCategory.get(n);
+            if (!cat) {
+                // Fallback por coincidencia parcial
+                outer: for (const g of visibleGroups) {
+                    for (const dn of g.documents) {
+                        if (n.includes(normalize(dn))) {
+                            cat = g.label;
+                            break outer;
+                        }
+                    }
+                }
+            }
+            if (!cat) cat = GENERAL_LABEL;
+            groupsMap[cat].push(doc);
+        }
+        return groupsMap;
+    }, [filteredDocs, nameToCategory, visibleGroups, categoryOrder]);
+
+    // NUEVO: solo categorías con documentos
+    const categoriesToRender = React.useMemo(
+        () => categoryOrder.filter((cat) => (groupedByCategory[cat]?.length ?? 0) > 0),
+        [categoryOrder, groupedByCategory]
+    );
+
+    // NUEVO: expandir únicamente categorías con resultados
     React.useEffect(() => {
         const hasQuery = query.trim().length > 0;
         if (!hasQuery || selectedDoc) return;
-        const keys = new Set<React.Key>(
-            CATEGORIES.filter((cat) => groupedByCategory[cat].length > 0)
-        );
+        const keys = new Set<React.Key>(categoriesToRender);
         setOpenCategories(keys as Selection);
-    }, [query, groupedByCategory, selectedDoc]);
+    }, [query, selectedDoc, categoriesToRender]);
 
     // NUEVO: progreso global (todas las secciones)
     const overallPct = React.useMemo(() => getCompletion(docs), [docs]);
@@ -313,8 +316,8 @@ export const StepExpedienteModal: React.FC<StepExpedienteModalProps> = ({
                                         selectedKeys={openCategories}
                                         onSelectionChange={setOpenCategories}
                                     >
-                                        {CATEGORIES.map((cat) => {
-                                            const list = groupedByCategory[cat];
+                                        {categoriesToRender.map((cat) => {
+                                            const list = groupedByCategory[cat] || [];
                                             const pct = getCompletion(list);
                                             // NUEVO: conteos y bandera de inválidos
                                             const total = list.length;
