@@ -87,7 +87,7 @@ export default function PagadorCard({ data, onRemove, onEdit }: Props) {
             </CardHeader>
             <CardBody className="pt-0 ">
                 <div className="grid grid-cols-2 gap-3 px-2">
-                    <Info label="Línea de crédito" value={fmtCurrency(data.lineaCredito)} />
+                    <Info label="Línea de crédito" value={`${fmtCurrency(data.lineaCredito)} MXN`} />
                     <Info label="Total facturas vigentes" value={data.facturas.length} />
                     <Info label="Días de plazo" value={Math.round(data.informacionNegociacion.promedioDiasPago)} />
                     <Info label="Aforo" value={`${(data.informacionNegociacion.aforo * 100).toFixed(2)} %`} />

@@ -204,6 +204,51 @@ export type GenereOfertaRes = {
     messages: any[];
 };
 
+// NUEVOS TIPOS Top10Empresas
+export type Top10EmpresasBody = {
+    rfc: string;
+    id: string;
+};
+
+export type FacturaTop10Empresas = {
+    uuid: string;
+    issuedAt: string;
+    valorFactura: number;
+    recibido: number;
+};
+
+export type InformacionNegociacionTop10Empresas = {
+    mondeda: string;
+    montoActivo: number;
+    montoCobrado: number;
+    balance: number;
+    aforo: number;
+    promedioDiasPago: number;
+    plazo: number;
+};
+
+export type TopPagadorTop10Empresas = {
+    valorPosibleNegociacion: number;
+    valorPosibleNegociacionRecibido: number;
+    valorPendienteNegociacion: number;
+    lineaCredito: number;
+    nombre: string;
+    rfc: string;
+    informacionNegociacion: InformacionNegociacionTop10Empresas;
+    facturas: FacturaTop10Empresas[];
+    porcentaje: number;
+};
+
+export type Top10EmpresasRes = {
+    topPagadores: TopPagadorTop10Empresas[];
+    cupoGlobal: number;
+    id: string | null;
+    token: string | null;
+    succeeded: boolean;
+    reasonCode: { value: number; description?: string };
+    messages: any[];
+};
+
 export const OperacionService = {
     async crear(body: CrearOperacionBody) {
         return apiCall<CrearOperacionRes>(`${BASE}/Operacion`, {
@@ -274,6 +319,15 @@ export const OperacionService = {
 
     async genereOferta(payload: GenereOfertaBody) {
         return apiCall<GenereOfertaRes>(`${BASE}/GenereOferta`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    },
+
+    // NUEVO: Top10Empresas
+    async top10Empresas(payload: Top10EmpresasBody) {
+        return apiCall<Top10EmpresasRes>(`${BASE}/Top10Empresas`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),

@@ -21,7 +21,7 @@ import { Icon } from "@iconify/react";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useOperacionFlow } from "../context/flow-context";
-import { redirect } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
 
 type HeaderProps = {
     stepTitle: string;
@@ -33,9 +33,10 @@ type HeaderProps = {
     showRfc?: boolean;
 };
 
-export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSteps = true, showIsCollabsable = true, showRfc = true }: HeaderProps) {
+export default function Header({ stepTitle, stepBadge, stepSubtitle, showSteps = true, showIsCollabsable = true, showRfc = true }: HeaderProps) {
     const flow = useOperacionFlow();
     const isAuth = useIsAuthenticated();
+    const { rfc, id, idLote } = useParams<{ rfc: string; id: string; idLote: string }>();
     const { instance } = useMsal();
 
     const account = instance.getActiveAccount() ?? instance.getAllAccounts()[0] ?? null;
@@ -159,7 +160,7 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
                                 <DropdownItem key="vinculaciones" color="primary" endContent={<Icon icon="line-md:list" />}>
                                     Cambiar empresa
                                 </DropdownItem>
-                                <DropdownItem key="solicitudes" color="primary" endContent={<Icon icon="line-md:file-document" />}>
+                                <DropdownItem key="solicitudes" color="primary" onClick={() => redirect(`/operaciones-cliente/${rfc}/${id}`)} endContent={<Icon icon="line-md:file-document" />}>
                                     Mis solicitudes
                                 </DropdownItem>
                                 <DropdownItem key="logout" color="danger" endContent={<Icon icon="line-md:logout" />}>
