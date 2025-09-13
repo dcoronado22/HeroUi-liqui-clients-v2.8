@@ -115,6 +115,7 @@ export type GetOperacionesLoteBody = {
 export type OperacionClienteLote = {
     id: string;
     rfc: string;
+    idLote: string;
     rfcTo: string;
     state: number;
     status: number;
@@ -128,6 +129,7 @@ export type OperacionClienteLote = {
 };
 
 export type OperacionLote = {
+    idLote: any;
     id: string;
     rfc: string;
     state: number;
@@ -146,6 +148,55 @@ export type OperacionLote = {
 
 export type GetOperacionesLoteRes = {
     operacionesLote: OperacionLote[];
+    id: string | null;
+    idLote: string | null;
+    token: string | null;
+    succeeded: boolean;
+    reasonCode: { value: number; description?: string };
+    messages: any[];
+};
+
+// NUEVOS TIPOS GenereOferta
+export type GenereOfertaBody = {
+    rfc: string;
+    id: string;
+};
+
+export type FacturaGenereOferta = {
+    uuid: string;
+    issuedAt: string;
+    valorFactura: number;
+    recibido: number;
+};
+
+export type InformacionNegociacionGenereOferta = {
+    mondeda: string; // se respeta el nombre tal como viene del backend
+    montoActivo: number;
+    montoCobrado: number;
+    balance: number;
+    aforo: number;
+    promedioDiasPago: number;
+    plazo: number;
+};
+
+export type PagadorSeleccionadoGenereOferta = {
+    promedioDiasPago: number;
+    valorPosibleNegociacion: number;
+    valorPosibleNegociacionRecibido: number;
+    valorPendienteNegociacion: number;
+    lineaCredito: number;
+    nombre: string;
+    rfc: string;
+    informacionNegociacion: InformacionNegociacionGenereOferta;
+    facturas: FacturaGenereOferta[];
+    porcentaje: number;
+};
+
+export type GenereOfertaRes = {
+    pagadoresSeleccionados: PagadorSeleccionadoGenereOferta[];
+    liquidezObtenida: number;
+    liquidezNecesaria: number;
+    cumpleLiquidezNecesaria: boolean;
     id: string | null;
     token: string | null;
     succeeded: boolean;
@@ -218,6 +269,14 @@ export const OperacionService = {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ rfc }),
+        });
+    },
+
+    async genereOferta(payload: GenereOfertaBody) {
+        return apiCall<GenereOfertaRes>(`${BASE}/GenereOferta`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
         });
     },
 };

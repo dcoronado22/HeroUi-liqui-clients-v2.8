@@ -81,7 +81,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction, v
                                 <Icon icon="lucide:file-text" className="text-primary-500 text-sm" />
                                 <div className="hidden xl:flex flex-col leading-tight">
                                     <span className="text-[10px] text-default-500">RFC</span>
-                                    <span className="text-xs font-medium truncate">{transaction.rfc}</span>
+                                    <span className="text-xs font-medium truncate">{transaction.rfcTo}</span>
                                 </div>
                             </div>
                             <div className="flex flex-col leading-tight flex-shrink-0">
@@ -99,10 +99,6 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction, v
                             <div className="flex flex-col leading-tight flex-shrink-0">
                                 <span className="text-[10px] text-default-500">Plazo</span>
                                 <span className="text-xs font-medium">{(transaction.diasPlazo)} d</span>
-                            </div>
-                            <div className="hidden xl:flex flex-col leading-tight flex-shrink-0 min-w-0">
-                                <span className="text-[10px] text-default-500">RFC TO</span>
-                                <span className="text-xs font-medium truncate">{transaction.rfcTo}</span>
                             </div>
                             <div className="hidden lg:flex flex-col leading-tight flex-shrink-0">
                                 <span className="text-[10px] text-default-500">Fecha</span>

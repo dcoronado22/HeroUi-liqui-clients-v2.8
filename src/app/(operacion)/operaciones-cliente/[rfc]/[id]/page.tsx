@@ -7,11 +7,16 @@ import { DynamicTable } from "@/src/shared/components/DynamicTable/DynamicTable"
 import { OperacionService } from "@/src/domains/operacion/services/operacion.service";
 import { Icon } from "@iconify/react";
 import { TransactionCard } from "@/src/domains/operacion/components/transaction-card";
+import { PreOfertaModal } from "@/src/domains/operacion/components/PreOfertaModal";
 
 export default function OperacionesClientePage() {
     const { rfc, id } = useParams<{ rfc: string; id: string }>();
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [preOfertaLoading, setPreOfertaLoading] = useState(false);
+    const [preOfertaGenerada, setPreOfertaGenerada] = useState(false);
+    const [preOfertaData, setPreOfertaData] = useState<any | null>(null); // guarda respuesta completa
+    const [preOfertaModalOpen, setPreOfertaModalOpen] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -26,6 +31,7 @@ export default function OperacionesClientePage() {
                         : 0;
                     return {
                         id: o.id,
+                        idLote: o.idLote,
                         fecha: `${new Date(o.fechaCreacion).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" })} ${new Date(o.fechaCreacion).toLocaleTimeString()}`,
                         clientes: o.cantidadOperaciones,
                         monto: o.montoTotal,
@@ -42,6 +48,26 @@ export default function OperacionesClientePage() {
             }
         })();
     }, [rfc]);
+
+    useEffect(() => {
+        if (!rfc || !id) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                setPreOfertaLoading(true);
+                const res = await OperacionService.genereOferta({ rfc, id: "18c84d53-1c81-4ecd-a5d8-622fec7e8289" });
+                if (!cancelled && res?.succeeded) {
+                    setPreOfertaGenerada(true);
+                    setPreOfertaData(res); // almacena datos para el modal
+                }
+            } catch (e) {
+                console.error("Error generando pre-oferta", e);
+            } finally {
+                if (!cancelled) setPreOfertaLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [rfc, id]);
 
     const columns = [
         { key: "fecha", label: "FECHA", allowsSorting: true },
@@ -67,6 +93,7 @@ export default function OperacionesClientePage() {
                     size="sm"
                     color="primary"
                     variant="solid"
+                    onPress={() => router.push(`/operacion/${rfc}/${item.id}/lote/${item.idLote}`)}
                 >
                     Continuar Solicitud
                 </Button>
@@ -108,23 +135,27 @@ export default function OperacionesClientePage() {
                 <Chip size="sm" color="primary" variant="flat" className="ml-2">
                     {data.length} operaciones
                 </Chip>
-                <Tooltip content={<div className="px-2 py-5">
-                    <div className="text-small font-bold">Pre-oferta disponible según tu necesidad de liquidez.</div>
-                    <div className="text-tiny">Hemos generado una pre-oferta en base al monto solicitado. Revisa los detalles y continúa.</div>
-                </div>} placement="left" showArrow>
-                    <Button
-                        className="reflection-button font-medium ml-auto bg-success/25 text-success-600 hover:bg-success/20 active:bg-success/10 px-5 py-5.4"
-                        color="success"
-                        variant="solid"
-                        size="md"
-                        radius="md"
-                        startContent={<Icon icon="line-md:confirm-circle-twotone" fontSize={20} />}
-                    >
-                        Pre Oferta disponible
-                    </Button>
-                </Tooltip>
+                {!preOfertaLoading && preOfertaGenerada && (
+                    <Tooltip content={<div className="px-2 py-5">
+                        <div className="text-small font-bold">Pre-oferta disponible según tu necesidad de liquidez.</div>
+                        <div className="text-tiny">Hemos generado una pre-oferta en base al monto solicitado. Revisa los detalles y continúa.</div>
+                    </div>} placement="left" showArrow>
+                        <Button
+                            className="reflection-button font-medium ml-auto bg-success/25 text-success-600 hover:bg-success/20 active:bg-success/10 px-5 py-5.4"
+                            color="success"
+                            variant="solid"
+                            size="md"
+                            radius="md"
+                            startContent={<Icon icon="line-md:confirm-circle-twotone" fontSize={20} />}
+                            onPress={() => setPreOfertaModalOpen(true)}
+                        >
+                            Pre Oferta disponible
+                        </Button>
+                    </Tooltip>
+                )}
                 <Button
                     color="primary"
+                    className={preOfertaGenerada ? "" : "ml-auto"}
                     startContent={<Icon icon="line-md:plus-circle" />}
                     onPress={() => router.push(`/operacion/${rfc}/${id}`)}
                 >
@@ -150,6 +181,15 @@ export default function OperacionesClientePage() {
                     />
                 </CardBody>
             </Card>
+            <PreOfertaModal
+                open={preOfertaModalOpen}
+                onClose={() => setPreOfertaModalOpen(false)}
+                data={preOfertaData}
+                onContinuar={() => {
+                    // acción opcional al continuar desde la pre-oferta
+                    // router.push(...)
+                }}
+            />
             <style jsx>{`
                 .shimmer-diagonal {
                     isolation: isolate;
