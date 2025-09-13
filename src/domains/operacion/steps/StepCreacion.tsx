@@ -2,6 +2,8 @@ import { Autocomplete, AutocompleteItem, Button, Card, CardBody, CardHeader, Chi
 import { Icon } from "@iconify/react";
 import { useState, useMemo, useEffect } from "react";
 import { OperacionService } from "../services/operacion.service"; // NUEVO
+import { addToast } from "@heroui/toast"; // NUEVO
+import { useRouter } from "next/navigation"; // NUEVO
 
 import PagadorCard, { PagadorData } from "../components/PagadorCard";
 import PagadorFacturasModal from "../components/PagadorFacturasModal";
@@ -29,7 +31,7 @@ type StepCreacionProps = {
     onAdvance?: () => Promise<void> | void;
 };
 
-export default function StepCreacions({ bindStepActions, id, rfc }: StepCreacionProps) {
+export default function StepCreacions({ bindStepActions, id, rfc, onAdvance }: StepCreacionProps) {
     const [selectedPagadores, setSelectedPagadores] = useState<PagadorData[]>([]);
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [inputValue, setInputValue] = useState("");
@@ -41,6 +43,10 @@ export default function StepCreacions({ bindStepActions, id, rfc }: StepCreacion
     const [topPagadores, setTopPagadores] = useState<any[]>([]);
     const [loadingTop, setLoadingTop] = useState(false);
     const [errorTop, setErrorTop] = useState<string | null>(null);
+    // NUEVO: estado envío operación
+    const [loadingSubmit, setLoadingSubmit] = useState(false);
+
+    const router = useRouter(); // NUEVO
 
     // NUEVO: fetch Top10Empresas
     useEffect(() => {
@@ -79,10 +85,10 @@ export default function StepCreacions({ bindStepActions, id, rfc }: StepCreacion
     useEffect(() => {
         bindStepActions?.({
             prevDisabled: true, // Paso 1: siempre deshabilitado "anterior"
-            nextDisabled: selectedPagadores.length === 0 // Next deshabilitado si no hay pagador
-            // next: () => { /* aquí iría la lógica para avanzar cuando exista al menos un pagador */ }
+            nextDisabled: selectedPagadores.length === 0 || loadingSubmit, // Next deshabilitado si no hay pagador
+            next: handleCrearOperacion, // NUEVO
         });
-    }, [selectedPagadores, bindStepActions]);
+    }, [selectedPagadores, bindStepActions, loadingSubmit]);
 
     // NUEVO: totales de facturas seleccionadas
     const { totalSeleccionado, totalRecibido } = useMemo(() => {
@@ -97,6 +103,75 @@ export default function StepCreacions({ bindStepActions, id, rfc }: StepCreacion
         });
         return { totalSeleccionado, totalRecibido };
     }, [selectedPagadores]);
+
+    // NUEVO: función para crear operación (state 1)
+    const handleCrearOperacion = async () => {
+        if (!rfc || !id || selectedPagadores.length === 0 || loadingSubmit) return;
+        try {
+            setLoadingSubmit(true);
+
+            // Mapeo de facturas limpiando campos UI innecesarios
+            const clientesSeleccionados = selectedPagadores.map((p: any) => ({
+                valorPosibleNegociacion: p.valorPosibleNegociacion,
+                valorPosibleNegociacionRecibido: p.valorPosibleNegociacionRecibido,
+                valorPendienteNegociacion: p.valorPendienteNegociacion,
+                lineaCredito: p.lineaCredito,
+                nombre: p.nombre,
+                rfc: p.rfc,
+                informacionNegociacion: p.informacionNegociacion,
+                porcentaje: p.porcentaje,
+                facturas: (p.selectedFacturas || []).map((f: any) => ({
+                    uuid: f.uuid,
+                    issuedAt: f.issuedAt,
+                    valorFactura: f.valorFactura,
+                    recibido: f.recibido,
+                })),
+            }));
+
+            const body = {
+                state: 1 as const,
+                requestData: {
+                    clientesSeleccionados,
+                    nombre: selectedPagadores[0]?.nombre || "", // TODO: reemplazar por nombre del cliente originador si se dispone
+                    rfc,
+                    idLote: null,
+                },
+            };
+
+            const res = await OperacionService.crearOperacionClientesSeleccionados(body);
+            const ok = res?.responseData?.Succeeded;
+            const idLote = res?.responseData?.IdLote;
+
+            if (ok && idLote) {
+                addToast({
+                    title: "Operación creada",
+                    description: `Lote: ${idLote}`,
+                    color: "success",
+                });
+                // Redirigir a la página del lote
+                router.replace(`/operacion/${encodeURIComponent(rfc)}/${encodeURIComponent(id)}/lote/${encodeURIComponent(idLote)}`);
+                return;
+            }
+
+            if (ok && !idLote) {
+                // Caso raro: éxito sin IdLote -> fallback
+                await onAdvance?.();
+                return;
+            }
+
+            const rc = res?.responseData?.ReasonCode?.Value;
+            const rd = res?.responseData?.ReasonCode?.Description;
+            addToast({
+                title: "No se pudo crear",
+                description: rd ? `${rc} - ${rd}` : "Error al crear la operación",
+                color: "danger",
+            });
+        } catch (e) {
+            addToast({ title: "Error", description: "Fallo en la creación de la operación", color: "danger" });
+        } finally {
+            setLoadingSubmit(false);
+        }
+    };
 
     const handleSelect = (key: React.Key | null) => {
         if (!key) return;

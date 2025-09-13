@@ -1,6 +1,7 @@
 import { EstadoOperacion } from "@/src/domains/operacion/estados";
 import { StepDef } from "@/src/shared/types/stepper";
 import StepCreacion from "./StepCreacion";
+import StepVerificacion from "./StepVerificacion";
 
 export const STEPS: StepDef<any>[] = [
     { id: "default", title: "Inicio", description: "Inicio del flujo", icon: "lucide:play-circle" },
@@ -23,12 +24,8 @@ export const stateToComponentMap: Record<
     React.ComponentType<any>
 > = {
     [EstadoOperacion.Default]: StepCreacion,
-    [EstadoOperacion.Creado]: (p) => (
-        <></>
-    ),
-    [EstadoOperacion.ProceseInicio]: (p) => (
-        <></>
-    ),
+    [EstadoOperacion.Creado]: StepVerificacion,
+    [EstadoOperacion.ProceseInicio]: StepVerificacion,
     [EstadoOperacion.CaptureFirmaMiFiel]: (p) => (<></>),
     [EstadoOperacion.Cotizado]: (p) => (
         <></>

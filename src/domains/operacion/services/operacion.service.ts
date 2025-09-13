@@ -249,6 +249,75 @@ export type Top10EmpresasRes = {
     messages: any[];
 };
 
+// NUEVOS TIPOS: creación operación (clientes seleccionados)
+export type CrearOperacionClientesSeleccionadosFactura = {
+    uuid: string;
+    issuedAt: string;
+    valorFactura: number;
+    recibido: number;
+    // Campos UI que podrían venir: los ignoramos al enviar si no existen en backend
+    id?: string;
+    folio?: string;
+    fechaEmision?: string;
+    fechaVencimiento?: string;
+    checked?: boolean;
+};
+
+export type CrearOperacionClienteSeleccionado = {
+    valorPosibleNegociacion: number;
+    valorPosibleNegociacionRecibido: number;
+    valorPendienteNegociacion: number;
+    lineaCredito: number;
+    nombre: string;
+    rfc: string;
+    informacionNegociacion: {
+        mondeda: string;
+        montoActivo: number;
+        montoCobrado: number;
+        balance: number;
+        aforo: number;
+        promedioDiasPago: number;
+        plazo: number;
+    };
+    facturas: CrearOperacionClientesSeleccionadosFactura[];
+    porcentaje: number;
+};
+
+export type CrearOperacionClientesSeleccionadosBody = {
+    state: 1;
+    requestData: {
+        clientesSeleccionados: CrearOperacionClienteSeleccionado[];
+        nombre: string; // nombre del titular de la operación
+        rfc: string;
+        idLote: string | null;
+    };
+};
+
+export type CrearOperacionStatusResponse = {
+    Xmls: any[];
+    RfcTo: string;
+    Id: string;
+    Token: string | null;
+    Succeeded: boolean;
+    ReasonCode?: { Value: number; Description?: string };
+    Messages?: string[];
+};
+
+export type CrearOperacionClientesSeleccionadosRes = {
+    state: number;
+    status: number;
+    token?: string;
+    responseData?: {
+        StatusResponses: CrearOperacionStatusResponse[];
+        IdLote: string;
+        Id: string | null;
+        Token: string | null;
+        Succeeded: boolean;
+        ReasonCode?: { Value: number; Description?: string };
+        Messages?: string[];
+    };
+};
+
 export const OperacionService = {
     async crear(body: CrearOperacionBody) {
         return apiCall<CrearOperacionRes>(`${BASE}/Operacion`, {
@@ -331,6 +400,14 @@ export const OperacionService = {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
+        });
+    },
+
+    // NUEVO: creación de operación con clientes seleccionados (state = 1)
+    async crearOperacionClientesSeleccionados(body: CrearOperacionClientesSeleccionadosBody) {
+        return apiCall<CrearOperacionClientesSeleccionadosRes>(`${BASE}/Operacion`, {
+            method: "POST",
+            body,
         });
     },
 };
