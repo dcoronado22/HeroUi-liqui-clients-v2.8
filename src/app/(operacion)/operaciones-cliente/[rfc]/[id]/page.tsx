@@ -30,8 +30,10 @@ export default function OperacionesClientePage() {
                         ? o.operacionCliente.reduce((acc, c) => acc + (c.aforo ?? 0), 0) / o.operacionCliente.length
                         : 0;
                     return {
+                        // id interno del lote (lo conservamos por compatibilidad si se usaba en otra parte)
                         id: o.id,
-                        idLote: o.idLote,
+                        // aseguramos idLote: usa o.idLote si existe, si no el id base
+                        idLote: o.idLote ?? o.id,
                         fecha: `${new Date(o.fechaCreacion).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" })} ${new Date(o.fechaCreacion).toLocaleTimeString()}`,
                         clientes: o.cantidadOperaciones,
                         monto: o.montoTotal,
@@ -55,10 +57,11 @@ export default function OperacionesClientePage() {
         (async () => {
             try {
                 setPreOfertaLoading(true);
-                const res = await OperacionService.genereOferta({ rfc, id: "18c84d53-1c81-4ecd-a5d8-622fec7e8289" });
+                // Usar el id dinámico recibido en la ruta en lugar de uno hardcodeado
+                const res = await OperacionService.genereOferta({ rfc, id });
                 if (!cancelled && res?.succeeded) {
                     setPreOfertaGenerada(true);
-                    setPreOfertaData(res); // almacena datos para el modal
+                    setPreOfertaData(res);
                 }
             } catch (e) {
                 console.error("Error generando pre-oferta", e);
@@ -93,17 +96,36 @@ export default function OperacionesClientePage() {
                     size="sm"
                     color="primary"
                     variant="solid"
-                    onPress={() => router.push(`/operacion/${rfc}/${item.id}/lote/${item.idLote}`)}
+                    // usamos el id del parámetro de la página (id de la solicitud general)
+                    // y el idLote ya normalizado; fallback final a item.id por seguridad
+                    onPress={() => router.push(`/operacion/${rfc}/${id}/lote/${item.idLote ?? item.id}`)}
                 >
                     Continuar Solicitud
                 </Button>
-
             ),
         },
     ];
 
     function handleRefetch() {
         setData(d => [...d]);
+    }
+
+    // NUEVO: iniciar una nueva solicitud generando un id distinto y limpiando estados previos
+    function iniciarNuevaSolicitud() {
+        try {
+            if (typeof window !== "undefined") {
+                // Ajustar prefijos según cómo persistan el wizard (ejemplos)
+                const prefixes = ["operacion-wizard", "solicitud-", "operacion-form"];
+                Object.keys(localStorage).forEach(k => {
+                    if (prefixes.some(p => k.startsWith(p))) {
+                        localStorage.removeItem(k);
+                    }
+                });
+            }
+        } catch (_) { /* silencioso */ }
+        const nuevoId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
+        // Se agrega ?nuevo=1 por si en la pantalla destino quieren detectar y forzar reset adicional
+        router.push(`/operacion/${rfc}/${nuevoId}?nuevo=1`);
     }
 
     const accordionContent = (item: any) => {
@@ -157,7 +179,7 @@ export default function OperacionesClientePage() {
                     color="primary"
                     className={preOfertaGenerada ? "" : "ml-auto"}
                     startContent={<Icon icon="line-md:plus-circle" />}
-                    onPress={() => router.push(`/operacion/${rfc}/${id}`)}
+                    onPress={iniciarNuevaSolicitud}
                 >
                     Nueva Solicitud
                 </Button>

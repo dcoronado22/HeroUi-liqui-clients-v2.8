@@ -76,12 +76,13 @@ export function OperacionFlowProvider({ children }: { children: React.ReactNode 
         setState({ ...initialState, sidebarCollapsed, toggleSidebar });
     }, [sidebarCollapsed, toggleSidebar]);
 
-    const needsReset = React.useCallback((newId: string, newRfc?: string) => {
-        if (!state.id && !state.rfc) return false;
+    const needsReset = React.useCallback((newId: string, newRfc?: string, newIdLote?: string) => {
+        if (!state.id && !state.rfc && !state.idLote) return false;
         if (state.id && state.id !== newId) return true;
         if (newRfc && state.rfc && state.rfc !== newRfc) return true;
+        if (newIdLote && state.idLote && state.idLote !== newIdLote) return true;
         return false;
-    }, [state.id, state.rfc]);
+    }, [state.id, state.rfc, state.idLote]);
 
     const value = React.useMemo(() => ({
         ...state,

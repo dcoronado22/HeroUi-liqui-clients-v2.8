@@ -26,53 +26,65 @@ export function usePolling<T>({
     const ticks = React.useRef(0);
     const timer = React.useRef<NodeJS.Timeout | null>(null);
     const running = React.useRef(false);
+    const lastRun = React.useRef<number>(0);
 
     const clear = React.useCallback(() => {
         if (timer.current) {
+            console.log('[usePolling] clearing interval');
             clearInterval(timer.current);
+        } else {
+            console.log('[usePolling] clear called (no active timer)');
         }
         timer.current = null;
         running.current = false;
     }, []);
 
     const tick = React.useCallback(async () => {
-        // 🟢 Si ya está corriendo, simplemente saltamos este tick
-        if (running.current) {
-            console.log('Tick skipped - already running');
+        const now = Date.now();
+        if (!enabled) {
+            console.log('[usePolling] tick aborted (enabled=false)');
             return;
         }
-
-        running.current = true;
-        console.log('Polling tick started'); // Para debug
-
+        // Guard anti-rafaga: evita ticks más rápidos que el intervalo configurado.
+        if (lastRun.current && now - lastRun.current < intervalMs - 50) {
+            console.log('[usePolling] tick skipped (min interval guard)', {
+                elapsed: now - lastRun.current,
+                intervalMs
+            });
+            return;
+        }
+        if (running.current) {
+            console.log('[usePolling] tick skipped (previous still running)');
+            return;
+        }
+        lastRun.current = now;
+        const tickNumber = ticks.current + 1;
+        console.log(`[usePolling] ▶ tick ${tickNumber} starting...`);
         try {
             const res = await task();
-            console.log('Polling result:', res); // Para debug
-
+            console.log(`[usePolling] ✓ tick ${tickNumber} result`, res);
             onTick?.(res);
-
-            if (isDone(res)) {
-                console.log('Polling completed - isDone returned true');
+            const done = isDone(res);
+            console.log(`[usePolling] isDone(${tickNumber}) => ${done}`);
+            if (done) {
+                console.log('[usePolling] ✅ completed (isDone=true)');
                 clear();
                 onDone?.(res);
                 return;
             }
-
             ticks.current += 1;
-            console.log(`Tick ${ticks.current}${maxTicks ? `/${maxTicks}` : ''}`);
-
             if (maxTicks && ticks.current >= maxTicks) {
-                console.log('Polling stopped - max ticks reached');
+                console.warn('[usePolling] ⛔ maxTicks reached -> stopping');
                 clear();
             }
         } catch (error) {
-            console.error('Polling error:', error);
-            clear(); // en error cortamos para no spamear
+            console.error('[usePolling] ✖ error in tick', error);
+            clear();
         } finally {
-            // 🟢 CRUCIAL: Siempre liberar el flag running
             running.current = false;
+            console.log(`[usePolling] ▶ tick ${tickNumber} finished`);
         }
-    }, [task, isDone, onTick, onDone, maxTicks, clear]);
+    }, [enabled, task, isDone, onTick, onDone, maxTicks, clear, intervalMs]);
 
     // Limpiar al desmontar el componente
     React.useEffect(() => {
@@ -81,22 +93,18 @@ export function usePolling<T>({
 
     // Control principal del polling
     React.useEffect(() => {
+        console.log('[usePolling] effect(enabled) ->', { enabled, intervalMs, maxTicks });
         if (!enabled) {
+            if (ticks.current !== 0) console.log('[usePolling] disabling & resetting ticks');
             clear();
             ticks.current = 0;
             return;
         }
-
-        console.log('Starting polling...');
-
-        // Primer tick inmediato
+        console.log('[usePolling] starting (immediate tick + interval)');
         tick();
-
-        // Configurar intervalos
         timer.current = setInterval(tick, intervalMs);
-
-        // Cleanup al cambiar dependencias
         return () => {
+            console.log('[usePolling] cleanup (dependency change/unmount)');
             clear();
         };
     }, [enabled, intervalMs, tick, clear]);
@@ -104,22 +112,20 @@ export function usePolling<T>({
     // Pausa si la pestaña está oculta (opcional)
     React.useEffect(() => {
         if (!pauseWhenHidden) return;
-
         const onVisibilityChange = () => {
             if (document.hidden) {
-                console.log('Tab hidden - pausing polling');
+                console.log('[usePolling] document hidden -> pausing');
                 if (timer.current) {
                     clearInterval(timer.current);
                     timer.current = null;
                 }
             } else if (enabled && !timer.current) {
-                console.log('Tab visible - resuming polling');
+                console.log('[usePolling] document visible -> resuming');
                 ticks.current = 0;
-                tick(); // tick inmediato al volver
+                tick();
                 timer.current = setInterval(tick, intervalMs);
             }
         };
-
         document.addEventListener("visibilitychange", onVisibilityChange);
         return () => document.removeEventListener("visibilitychange", onVisibilityChange);
     }, [enabled, intervalMs, tick, pauseWhenHidden]);

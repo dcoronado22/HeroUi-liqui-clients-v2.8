@@ -318,6 +318,19 @@ export type CrearOperacionClientesSeleccionadosRes = {
     };
 };
 
+export type GetDocumentUrlBody = {
+    fileName: string; // ruta relativa en S3 (ej: operaciones/.../contrato.pdf)
+};
+
+export type GetDocumentUrlRes = {
+    urlFirmada: string;
+    id: string | null;
+    token: string | null;
+    succeeded: boolean;
+    reasonCode: { value: number; description?: string };
+    messages: any[];
+};
+
 export const OperacionService = {
     async crear(body: CrearOperacionBody) {
         return apiCall<CrearOperacionRes>(`${BASE}/Operacion`, {
@@ -408,6 +421,49 @@ export const OperacionService = {
         return apiCall<CrearOperacionClientesSeleccionadosRes>(`${BASE}/Operacion`, {
             method: "POST",
             body,
+        });
+    },
+
+    // NUEVO: detalle de operaciones por lote
+    async getDetalleOperacionesLote(rfc: string, idLote: string) {
+        return apiCall<any>(`${BASE}/GetDetalleOperacionesLote`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rfc, idLote }),
+        });
+    },
+
+    // NUEVO: tickFirmaSoportes (usa exactamente la forma requerida por el backend)
+    async tickFirmaSoportes(params: { idLote: string; rfc: string; operacionId: string }) {
+        const payload = {
+            state: 3,
+            RequestData: {
+                IdLote: params.idLote,
+                rfc: params.rfc,
+                Id: params.operacionId,
+            },
+        };
+        console.log('[tickFirmaSoportes] → POST /operaciones/operacion payload=', payload);
+        try {
+            const res = await apiCall<any>(`${BASE}/operacion`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            console.log('[tickFirmaSoportes] ← response', res);
+            return res;
+        } catch (e) {
+            console.error('[tickFirmaSoportes] ✖ error', e);
+            throw e;
+        }
+    },
+
+    // NUEVO: obtener URL firmada para visualizar/descargar documento
+    async getDocumentUrl(fileName: string) {
+        return apiCall<GetDocumentUrlRes>(`${BASE}/GetDocumentUrl`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileName }),
         });
     },
 };

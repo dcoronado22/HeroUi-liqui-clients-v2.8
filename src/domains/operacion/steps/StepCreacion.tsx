@@ -318,8 +318,6 @@ export default function StepCreacions({ bindStepActions, id, rfc, onAdvance }: S
                 onClose={closeModal}
                 onConfirm={(p) => {
                     handleConfirmModal(p);
-                    // El modal internamente llamará onClose, pero si cambiara en el futuro
-                    // nos aseguramos de limpiar también aquí.
                     setInputValue("");
                     setSelectedKey(null);
                 }}
