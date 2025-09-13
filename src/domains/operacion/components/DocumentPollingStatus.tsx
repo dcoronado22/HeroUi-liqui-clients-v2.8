@@ -178,7 +178,7 @@ export const DocumentPollingStatus: React.FC<Props> = ({
                 {clients.length === 0 && (
                     <div className="text-sm text-default-400 italic md:col-span-2">
                         {reasonCode === 4026
-                            ? 'Esperando que el backend genere documentos…'
+                            ? 'Esperando que el se generen los documentos…'
                             : 'Sin documentos disponibles.'}
                     </div>
                 )}

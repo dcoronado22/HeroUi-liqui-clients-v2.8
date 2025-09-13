@@ -61,10 +61,10 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction, v
     // Determine status color based on state
     const getStatus = (): { color: "default" | "success" | "warning" | "primary" | "danger"; bar: string } => {
         switch (transaction.state) {
-            case 1: return { color: "success", bar: "bg-success-500" };
-            case 2: return { color: "warning", bar: "bg-warning-500" };
+            case 1: return { color: "primary", bar: "bg-primary-500" };
+            case 2: return { color: "primary", bar: "bg-primary-500" };
             case 3: return { color: "primary", bar: "bg-primary-500" };
-            case 4: return { color: "danger", bar: "bg-danger-500" };
+            case 4: return { color: "success", bar: "bg-success-500" };
             default: return { color: "default", bar: "bg-default-300" };
         }
     };
@@ -76,53 +76,51 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction, v
                 <CardBody className="p-0">
                     <div className="flex items-stretch w-full">
                         <div className={`w-1 ${status.bar} rounded-l-sm flex-shrink-0`} />
-                        <div className="flex flex-1 items-center justify-between gap-2 px-3 py-2 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                                <Icon icon="lucide:file-text" className="text-primary-500 text-sm" />
-                                <div className="hidden xl:flex flex-col leading-tight">
+                        <div className="flex flex-1 items-center justify-between gap-2 px-3 py-2 min-w-0 overflow-hidden">
+                            <div className="hidden xl:flex items-center gap-1.5 flex-shrink-0 w-30">
+                                <Icon icon="lucide:file-text" className="text-primary-500 text-sm flex-shrink-0" />
+                                <div className="flex flex-col leading-tight min-w-0">
                                     <span className="text-[10px] text-default-500">RFC</span>
-                                    <span className="text-xs font-medium truncate">{transaction.rfcTo}</span>
+                                    <span
+                                        className="text-xs font-medium truncate whitespace-nowrap"
+                                        title={transaction.rfcTo}
+                                    >
+                                        {transaction.rfcTo}
+                                    </span>
                                 </div>
                             </div>
-                            <div className="flex flex-col leading-tight flex-shrink-0">
+                            <div className="flex flex-col leading-tight flex-shrink-0 w-24">
                                 <span className="text-[10px] text-default-500">Monto</span>
-                                <span className="text-xs font-semibold">{formatCurrency(transaction.monto)}</span>
+                                <span className="text-xs font-semibold truncate">{formatCurrency(transaction.monto)}</span>
                             </div>
-                            <div className="flex flex-col leading-tight flex-shrink-0">
+                            <div className="flex flex-col leading-tight flex-shrink-0 w-14">
                                 <span className="text-[10px] text-default-500">Fact.</span>
                                 <span className="text-xs font-medium">{transaction.numeroFacturas}</span>
                             </div>
-                            <div className="flex flex-col leading-tight flex-shrink-0">
+                            <div className="flex flex-col leading-tight flex-shrink-0 w-16">
                                 <span className="text-[10px] text-default-500">Aforo</span>
                                 <span className="text-xs font-medium">{formatPercentage(transaction.aforo)}</span>
                             </div>
-                            <div className="flex flex-col leading-tight flex-shrink-0">
+                            <div className="flex flex-col leading-tight flex-shrink-0 w-16">
                                 <span className="text-[10px] text-default-500">Plazo</span>
-                                <span className="text-xs font-medium">{(transaction.diasPlazo)} d</span>
+                                <span className="text-xs font-medium">{transaction.diasPlazo} d</span>
                             </div>
-                            <div className="hidden lg:flex flex-col leading-tight flex-shrink-0">
+                            <div className="hidden lg:flex flex-col leading-tight flex-shrink-0 w-28">
                                 <span className="text-[10px] text-default-500">Fecha</span>
-                                <span className="text-[10px] font-medium">{formatShortDate(transaction.fechaCreacion)}</span>
+                                <span className="text-[10px] font-medium truncate">{formatShortDate(transaction.fechaCreacion)}</span>
                             </div>
-                            <div className="flex items-center flex-shrink-0">
+                            <div className="flex items-center flex-shrink-0 w-32">
                                 <Chip
                                     color={status.color as any}
                                     variant="flat"
-                                    className="text-[10px] font-medium px-2 py-0.5 truncate max-w-[140px]"
+                                    className="text-[10px] font-medium px-2 py-0.5 truncate w-full"
+                                    title={transaction.stateDescription}
                                 >
                                     {transaction.stateDescription}
                                 </Chip>
                             </div>
                             <div className="flex items-center flex-shrink-0">
-                                <Tooltip
-                                    content="Ver detalles">
-                                    <Button
-                                        aria-label="Ver detalles"
-                                        color="primary"
-                                    >
-                                        <Icon icon="line-md:external-link" className="text-base" />
-                                    </Button>
-                                </Tooltip>
+
                             </div>
                         </div>
                     </div>
@@ -200,14 +198,24 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ transaction, v
                         {/* Right column - Secondary information */}
                         <div className="md:w-72 flex-shrink-0 space-y-4">
                             <div className="bg-content2 rounded-md p-3 space-y-2">
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center gap-2">
                                     <p className="text-xs text-foreground-500">RFC Emisor</p>
-                                    <p className="text-sm font-medium">{transaction.rfc}</p>
+                                    <p
+                                        className="text-sm font-medium max-w-[140px] truncate whitespace-nowrap"
+                                        title={transaction.rfc}
+                                    >
+                                        {transaction.rfc}
+                                    </p>
                                 </div>
 
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center gap-2">
                                     <p className="text-xs text-foreground-500">RFC Receptor</p>
-                                    <p className="text-sm font-medium">{transaction.rfcTo}</p>
+                                    <p
+                                        className="text-sm font-medium max-w-[140px] truncate whitespace-nowrap"
+                                        title={transaction.rfcTo}
+                                    >
+                                        {transaction.rfcTo}
+                                    </p>
                                 </div>
 
                                 <div className="flex justify-between items-center">

@@ -57,6 +57,8 @@ export function usePolling<T>({
             console.log('[usePolling] tick skipped (previous still running)');
             return;
         }
+        // >>> FIX: marcar el tick como "en curso" antes de ejecutar la tarea
+        running.current = true;
         lastRun.current = now;
         const tickNumber = ticks.current + 1;
         console.log(`[usePolling] ▶ tick ${tickNumber} starting...`);
@@ -81,7 +83,7 @@ export function usePolling<T>({
             console.error('[usePolling] ✖ error in tick', error);
             clear();
         } finally {
-            running.current = false;
+            running.current = false; // ← se libera aquí, evitando reentradas simultáneas
             console.log(`[usePolling] ▶ tick ${tickNumber} finished`);
         }
     }, [enabled, task, isDone, onTick, onDone, maxTicks, clear, intervalMs]);

@@ -1,7 +1,6 @@
 'use client';
 import React from 'react';
 import { Card, CardBody } from '@heroui/react';
-// import { usePolling } from '@/src/shared/hooks/usePolling';  // ← eliminado
 import { OperacionService } from '../services/operacion.service';
 import { DocumentPollingStatus, Client } from '../components/DocumentPollingStatus';
 import { getFileExt } from '@/src/shared/helpers/files';

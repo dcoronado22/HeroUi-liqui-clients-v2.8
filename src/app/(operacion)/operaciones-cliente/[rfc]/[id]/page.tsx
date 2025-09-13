@@ -112,20 +112,28 @@ export default function OperacionesClientePage() {
 
     // NUEVO: iniciar una nueva solicitud generando un id distinto y limpiando estados previos
     function iniciarNuevaSolicitud() {
+        // Limpia cualquier rastro previo del wizard
         try {
             if (typeof window !== "undefined") {
-                // Ajustar prefijos según cómo persistan el wizard (ejemplos)
                 const prefixes = ["operacion-wizard", "solicitud-", "operacion-form"];
-                Object.keys(localStorage).forEach(k => {
-                    if (prefixes.some(p => k.startsWith(p))) {
-                        localStorage.removeItem(k);
-                    }
-                });
+                for (const k of Object.keys(localStorage)) {
+                    if (prefixes.some(p => k.startsWith(p))) localStorage.removeItem(k);
+                }
             }
-        } catch (_) { /* silencioso */ }
-        const nuevoId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
-        // Se agrega ?nuevo=1 por si en la pantalla destino quieren detectar y forzar reset adicional
-        router.push(`/operacion/${rfc}/${nuevoId}?nuevo=1`);
+        } catch { }
+
+        const nuevoId = (typeof crypto !== "undefined" && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : Date.now().toString(36);
+
+        const url = `/operacion/${rfc}/${nuevoId}?nuevo=1`;
+
+        // Hard navigation para asegurar estado limpio (evita reutilización de layouts/client state)
+        if (typeof window !== "undefined") {
+            window.location.assign(url);
+        } else {
+            // Fallback (SSR) - no debería ocurrir porque es client component
+        }
     }
 
     const accordionContent = (item: any) => {

@@ -331,6 +331,36 @@ export type GetDocumentUrlRes = {
     messages: any[];
 };
 
+// NUEVOS TIPOS: Verificación Cotizaciones
+export type VerificacionServicioEstado = {
+    ReasonCode: number;
+    Messages: string;
+    Succeeded: boolean;
+    IdServicio: number;
+    NombreServicio: string | null;
+};
+
+export type VerificacionOperacionStatus = {
+    IdOperacion: string;
+    Succeeded: boolean;
+    ServiciosEstados: VerificacionServicioEstado[];
+};
+
+export type VerificacionCotizacionesRes = {
+    state: number;
+    status: number;
+    token?: string;
+    responseData?: {
+        Operaciones: VerificacionOperacionStatus[];
+        State: number;
+        Id: string | null;
+        Token: string | null;
+        Succeeded: boolean;
+        ReasonCode?: { Value: number; Description?: string };
+        Messages?: any[];
+    };
+};
+
 export const OperacionService = {
     async crear(body: CrearOperacionBody) {
         return apiCall<CrearOperacionRes>(`${BASE}/Operacion`, {
@@ -465,5 +495,29 @@ export const OperacionService = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ fileName }),
         });
+    },
+
+    // NUEVO: polling verificación de cotizaciones (state=2)
+    async tickVerificacionCotizaciones(params: { rfc: string; idLote: string }) {
+        const payload = {
+            state: 2,
+            RequestData: {
+                Rfc: params.rfc,
+                IdLote: params.idLote
+            }
+        };
+        console.log('[tickVerificacionCotizaciones] → POST /operaciones/operacion', payload);
+        try {
+            const res = await apiCall<VerificacionCotizacionesRes>(`${BASE}/operacion`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            console.log('[tickVerificacionCotizaciones] ←', res);
+            return res;
+        } catch (e) {
+            console.error('[tickVerificacionCotizaciones] ✖ error', e);
+            throw e;
+        }
     },
 };
