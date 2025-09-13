@@ -1,4 +1,3 @@
-// src/app/(vinculacion)/vinculacion/[id]/page.tsx
 "use client";
 
 import * as React from "react";

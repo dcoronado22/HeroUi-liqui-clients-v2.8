@@ -66,9 +66,6 @@ export default function StepClaveCiec({ id, rfc, onAdvance, bindStepActions }: P
                     addToast({ title: "Autenticación fallida", description: "Revisa tus datos e intenta de nuevo", color: "danger" });
                     setOpening(false);
                 },
-                // Nuevo: cubrir el caso de cierre manual del widget
-                onClose: handleWidgetDismiss,
-                onCancel: handleWidgetDismiss,
             });
         } catch (e) {
             console.error(e);
