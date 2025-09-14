@@ -234,13 +234,22 @@ export default function StepSeleccionClientes({
                 <div className="grid grid-cols-1 gap-3">
                     <div className="text-medium font-medium">¿Cuánta liquidez necesitas?</div>
                     <Input
+                        endContent={
+                            <div className="flex items-center">
+                                MXN
+                            </div>
+                        }
                         variant="bordered"
                         label="Liquidez (MXN)"
-                        startContent={<span>$</span>}
-                        endContent={<span className="text-default-500">MXN</span>}
+                        labelPlacement="outside"
+                        placeholder="0.00"
+                        startContent={
+                            <div className="pointer-events-none flex items-center">
+                                <span className="text-default-400 text-small">$</span>
+                            </div>
+                        }
                         value={liq}
                         onValueChange={(v) => setLiq(maskCurrency(v))}
-                        placeholder="Ej: 15,000,000"
                     />
                 </div>
             </CardBody>

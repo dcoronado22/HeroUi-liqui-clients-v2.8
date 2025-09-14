@@ -23,6 +23,7 @@
     "@heroui/system": "2.4.20",
     "@heroui/theme": "2.4.20",
     "@iconify/react": "^6.0.0",
+    "@internationalized/date": "^3.9.0",
     "@liquicapital/common": "file:vendor/liquicapital-common-1.0.0.tgz",
     "@react-aria/ssr": "3.9.10",
     "@react-aria/visually-hidden": "3.8.26",

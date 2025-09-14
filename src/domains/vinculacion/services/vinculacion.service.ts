@@ -107,6 +107,24 @@ export type DeleteFileExpedienteRes = {
     token?: string | null;
 };
 
+export type UploadDocumentBody = {
+    id: string;
+    rfc: string;
+    fileName: string;
+    contentType: string;
+    Base64Data: string;
+    useTemp?: boolean;
+};
+
+export type UploadDocumentRes = {
+    fileName: string;
+    id: string | null;
+    token: string | null;
+    succeeded: boolean;
+    reasonCode: { value: number; description?: string };
+    messages: any[];
+};
+
 export const VinculacionService = {
     async crear(body: CrearVinculacionBody) {
         return apiCall<CrearVinculacionRes>(`${BASE}/Vinculacion`, {
@@ -258,6 +276,41 @@ export const VinculacionService = {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
+        });
+    },
+
+    async almaceneDatosContrato(payload: {
+        rfc: string;
+        id: string;
+        escrituraData: any;
+        apoderadoLegalData: any;
+        desembolsoData: any;
+      }) {
+        return apiCall<any>(`${BASE}/AlmaceneDatosContrato`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      },
+
+    async uploadDocument(payload: UploadDocumentBody) {
+        const params = new URLSearchParams({
+            Id: payload.id,
+            Rfc: payload.rfc,
+            UseTemp: payload.useTemp ? "true" : "false",
+            "File-Name": payload.fileName,
+            "Content-Type": payload.contentType,
+        }).toString();
+        return apiCall<UploadDocumentRes>(`/vinculaciones/UploadDocument?${params}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                Base64Data: payload.Base64Data,
+                contentType: payload.contentType,
+                fileName: payload.fileName,
+                id: payload.id,
+                rfc: payload.rfc,
+            }),
         });
     },
 

@@ -34,7 +34,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "src/domains/vinculacion/steps/StepDatosLegales"  ],
   "exclude": [
     "node_modules"
   ]

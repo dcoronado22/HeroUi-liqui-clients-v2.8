@@ -42,7 +42,7 @@ export default function StepActions({
                 <Button
                     color="primary"
                     isDisabled={disableNext}
-                    isLoading={loadingNext}
+                    isLoading={loadingNext} // <-- agrega esta línea para mostrar loading
                     onPress={onNext}
                 >
                     Siguiente

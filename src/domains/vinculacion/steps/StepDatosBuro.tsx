@@ -177,23 +177,20 @@ export default function StepDatosBuro({ id, rfc, detalle, onAdvance, bindStepAct
                         isInvalid={cp !== "" && !isCP5(cp)}
                         errorMessage={cp !== "" && !isCP5(cp) ? "5 dígitos" : undefined}
                     />
-                    <Select
+                    <Autocomplete
                         label="Estado"
                         variant="bordered"
-                        selectedKeys={estado ? [estado] : []}
-                        onSelectionChange={(keys) => {
-                            const k = Array.from(keys)[0] as string | undefined;
-                            setEstado(k ?? "");
+                        selectedKey={estado || undefined}
+                        onSelectionChange={(k) => {
+                            const key = k as string | undefined;
+                            setEstado(key ?? "");
                             setMunicipio(""); // reset municipio al cambiar estado
                         }}
                         isRequired
+                        defaultItems={estados}
                     >
-                        {estados.map((e) => (
-                            <SelectItem key={e.value} textValue={e.label}>
-                                {e.label}
-                            </SelectItem>
-                        ))}
-                    </Select>
+                        {(item) => <AutocompleteItem key={item.value}>{item.label}</AutocompleteItem>}
+                    </Autocomplete>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

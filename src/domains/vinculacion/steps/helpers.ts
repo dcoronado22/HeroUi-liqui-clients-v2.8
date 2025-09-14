@@ -5,6 +5,15 @@ export function resolveVisibleSteps<TCtx>(steps: StepDef<TCtx>[], ctx: TCtx) {
     return steps.filter(s => (typeof s.visible === "function" ? s.visible(ctx) : s.visible ?? true));
 }
 
+export function normalize(str: any) {
+    if (typeof str !== "string") return "";
+    return str
+      .normalize("NFD") // separa acentos
+      .replace(/[\u0300-\u036f]/g, "") // elimina acentos
+      .toUpperCase()
+      .trim();
+  }
+
 type HeaderProgress = { title: string; index: number; total: number; subtitle?: string };
 
 export function computeHeaderProgress<TCtx>(

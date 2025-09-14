@@ -7,24 +7,8 @@ import VerticalStepper from "@/src/shared/components/Stepper/VerticalStepper";
 import StepActions from "@/src/shared/components/Stepper/StepActions";
 import { VinculacionService } from "@/src/domains/vinculacion/services/vinculacion.service";
 import { useVinculacionFlow } from "@/src/domains/vinculacion/context/flow-context";
-import { stateToComponentMap, STEPS } from "@/src/domains/vinculacion/steps";
+import { stateToComponentMap, StateToStepId, STEPS } from "@/src/domains/vinculacion/steps";
 import { EstadoVinculacion } from "@/src/domains/vinculacion/estados";
-
-// mapea state numérico a stepId (sin 7)
-const StateToStepId: Record<number, string> = {
-    [EstadoVinculacion.Creando]: "registro",
-    [EstadoVinculacion.CaptureClaveCiec]: "clave-ciec",
-    [EstadoVinculacion.CaptureAutorizacionBuro]: "datos-buro",
-    [EstadoVinculacion.CaptureFirmaMiFiel]: "firma-mifiel",
-    [EstadoVinculacion.CaptureFormatosExpediente]: "firma-mifiel",
-    [EstadoVinculacion.CaptureAutorizacionAvales]: "datos-avales",
-    [EstadoVinculacion.CaptureFirmaAvales]: "firma-avales",
-    [EstadoVinculacion.SeleccionClientesEstudio]: "seleccion-clientes",
-    [EstadoVinculacion.CaptureCargueFormatosExpediente]: "cargue-expediente",
-    [EstadoVinculacion.Vinculado]: "resumen",
-    [EstadoVinculacion.Rechazado]: "rechazado",
-    [EstadoVinculacion.Cancelado]: "cancelado",
-};
 
 export default function VinculacionCasePage() {
     const params = useParams<{ id: string }>();
@@ -66,11 +50,8 @@ export default function VinculacionCasePage() {
             : undefined;
         const fromCtx = flowRfc ?? undefined;
 
-        // 🔥 PRIORIDAD: Query > Storage > Context
-        // Si el RFC del query es diferente al del contexto, usar el del query
         const resolved = fromQuery || fromStorage || fromCtx;
 
-        // 🔥 Si el RFC resuelto es diferente al del contexto, limpiar el contexto
         if (resolved && fromCtx && resolved !== fromCtx) {
             console.log(`RFC mismatch detected: query/storage=${resolved}, context=${fromCtx}. Resetting context.`);
             flow.reset();
@@ -249,7 +230,11 @@ export default function VinculacionCasePage() {
                                         <Spinner label="Cargando detalle…" />
                                     </div>
                                 ) : errorMsg ? (
-                                    <div className="text-danger">{errorMsg}</div>
+                                    <div className="h-full w-full flex items-center justify-center">
+                                        <div className="text-danger text-center text-lg font-semibold">
+                                            {errorMsg}
+                                        </div>
+                                    </div>
                                 ) : StepComponent ? (
                                     <StepComponent
                                         id={flow.id!}
@@ -271,7 +256,7 @@ export default function VinculacionCasePage() {
                                 onNext={stepActions.next}
                                 disablePrev={stepActions.prevDisabled}
                                 disableNext={stepActions.nextDisabled}
-                                loadingNext={loadingNext}
+                                loadingNext={loadingNext} // <-- ya está correcto
                             />
                         </div>
                     </CardBody>
