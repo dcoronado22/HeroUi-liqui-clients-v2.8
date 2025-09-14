@@ -60,8 +60,8 @@ export const DocumentPollingStatus: React.FC<Props> = ({
                 </div>
                 {loading && (
                     <div className="flex items-center gap-2">
+                        <span className="text-sm text-default-500 mr-3">Verificando</span>
                         <Spinner size="sm" color="primary" variant='gradient' />
-                        <span className="text-sm text-default-500">Actualizando</span>
                     </div>
                 )}
             </div>
@@ -92,7 +92,7 @@ export const DocumentPollingStatus: React.FC<Props> = ({
                         </div>
                         <div className="w-full bg-default-100 rounded-full h-3 p-0.5 border border-default-200">
                             <div
-                                className="bg-gradient-to-r from-primary-300 to-success-400 h-full rounded-full transition-all duration-500 ease-out flex items-center justify-end px-2"
+                                className="bg-gradient-to-r from-primary to-success h-full rounded-full transition-all duration-500 ease-out flex items-center justify-end px-2"
                                 style={{ width: `${total === 0 ? 5 : Math.max((signed / (total || 1)) * 100, 5)}%` }}
                             >
                             </div>

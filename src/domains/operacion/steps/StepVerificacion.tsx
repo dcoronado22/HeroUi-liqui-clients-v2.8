@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardBody, CardHeader, Button, Spinner, Chip, Progress, addToast } from '@heroui/react';
+import { Card, CardBody, CardHeader, Button, Spinner, Chip, Progress, addToast, Tooltip } from '@heroui/react';
 import { OperacionService, VerificacionOperacionStatus } from '../services/operacion.service';
 import { Icon } from '@iconify/react';
 
@@ -381,6 +381,15 @@ const StepVerificacion: React.FC<StepVerificacionProps> = ({
         };
     }, []);
 
+    const displayOperaciones = React.useMemo<VerificacionOperacionStatus[]>(() => {
+        if (operacionesStatus.length > 0) return operacionesStatus;
+        return operationIds.map(id => ({
+            IdOperacion: id,
+            Succeeded: undefined,
+            ServiciosEstados: []
+        } as unknown as VerificacionOperacionStatus));
+    }, [operacionesStatus, operationIds]);
+
     return (
         <>
             <Card shadow='none'>
@@ -391,11 +400,13 @@ const StepVerificacion: React.FC<StepVerificacionProps> = ({
                                 <h2 className="text-2xl font-semibold tracking-tight">
                                     Verificación de cotizaciones
                                 </h2>
-                                <Icon icon="line-md:alert-circle" fontSize={25} className='text-primary' />
+                                <Tooltip content="Revisión automática del estado y condiciones de las operaciones en el lote">
+                                    <Icon icon="line-md:alert-circle" fontSize={25} className='text-primary' />
+                                </Tooltip>
                             </div>
                             <p className="text-default-500 text-sm leading-relaxed max-w-2xl">
                                 {pollingActivo
-                                    ? 'Verificando continuamente el estado de las operaciones…'
+                                    ? 'Validando continuamente el estado de las operaciones…'
                                     : finalizado
                                         ? 'La verificación ha finalizado.'
                                         : 'La verificación está detenida.'}{' '}
@@ -483,15 +494,8 @@ const StepVerificacion: React.FC<StepVerificacionProps> = ({
                     </div>
 
                     <div className="space-y-4">
-                        {operacionesStatus.length === 0 && (
-                            <div className="text-default-500 text-sm py-10 text-center border border-dashed rounded-md bg-content2/40">
-                                No hay información de operaciones aún.
-                                {pollingActivo && ' Verificando…'}
-                            </div>
-                        )}
-
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-                            {operacionesStatus.map(op => {
+                            {displayOperaciones.map(op => {
                                 const ok = op.Succeeded === true;
                                 const error = !ok && op.ServiciosEstados?.some(s => s.Succeeded === false);
                                 const estado = ok ? 'Completada' : error ? 'Error' : 'Pendiente';
@@ -521,7 +525,7 @@ const StepVerificacion: React.FC<StepVerificacionProps> = ({
 
                                         {!ok && !error && (
                                             <div className="flex items-center gap-2 text-xs text-primary">
-                                                <Spinner size="sm" className="!w-3 !h-3" />
+                                                <Spinner size="sm" variant='gradient' />
                                                 <span>Procesando…</span>
                                             </div>
                                         )}
