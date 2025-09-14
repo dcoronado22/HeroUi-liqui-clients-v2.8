@@ -10,6 +10,7 @@ import StepActions from "@/src/shared/components/Stepper/StepActions";
 import VerticalStepper from "@/src/shared/components/Stepper/VerticalStepper";
 import { EstadoOperacion } from "@/src/domains/operacion/estados";
 import StepCreacion from "@/src/domains/operacion/steps/StepCreacion";
+import StepCotizado from "@/src/domains/operacion/steps/StepCotizado"; // NUEVO
 
 export default function OperacionLotePage() {
     const { rfc, id, idLote } = useParams<{ rfc: string; id: string; idLote: string }>();
@@ -119,6 +120,8 @@ export default function OperacionLotePage() {
         return stateToComponentMap[flow.currentState as EstadoOperacion] ?? null;
     }, [flow.currentState]);
 
+    const hideStepActions = StepComponent === StepCotizado; // NUEVO
+
     const collapsed = flow.sidebarCollapsed;
 
     return (
@@ -137,6 +140,7 @@ export default function OperacionLotePage() {
                             currentId={currentStepId}
                             clickable={false}
                             compact={collapsed}
+                            markActiveAsCompleteIds={['cotizado']} // NUEVO
                         />
                     </CardBody>
                 </Card>
@@ -168,13 +172,15 @@ export default function OperacionLotePage() {
                             )}
                         </div>
 
-                        <StepActions
-                            onPrev={stepActions.prev}
-                            onNext={stepActions.next}
-                            disablePrev={stepActions.prevDisabled}
-                            disableNext={stepActions.nextDisabled}
-                            loadingNext={loadingNext}
-                        />
+                        {!hideStepActions && (
+                            <StepActions
+                                onPrev={stepActions.prev}
+                                onNext={stepActions.next}
+                                disablePrev={stepActions.prevDisabled}
+                                disableNext={stepActions.nextDisabled}
+                                loadingNext={loadingNext}
+                            />
+                        )}
                     </CardBody>
                 </Card>
             </div>

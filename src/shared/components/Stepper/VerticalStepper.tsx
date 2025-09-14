@@ -12,6 +12,7 @@ type Props<TCtx = any> = StepperPropsBase<TCtx> & {
     className?: string;
     compact?: boolean;
     hideConnectors?: boolean;
+    markActiveAsCompleteIds?: StepId[]; // NUEVO
 };
 
 export default function VerticalStepper<TCtx = any>({
@@ -23,6 +24,7 @@ export default function VerticalStepper<TCtx = any>({
     className,
     compact = true,
     hideConnectors = false,
+    markActiveAsCompleteIds = [], // NUEVO
 }: Props<TCtx>) {
     const { steps: visible, findIndex } = useResolvedSteps(steps, ctx);
     const currentIdx = Math.max(0, findIndex(currentId));
@@ -50,8 +52,11 @@ export default function VerticalStepper<TCtx = any>({
                 <ol className="relative flex flex-col flex-1 justify-between min-h-0 py-1">
                     {visible.map((s, i) => {
                         const disabled = s.disabled ? s.disabled(ctx as TCtx) : false;
-                        const status: "inactive" | "active" | "complete" =
+                        let status: "inactive" | "active" | "complete" =
                             isActive(i) ? "active" : isDone(i) ? "complete" : "inactive";
+                        if (status === "active" && markActiveAsCompleteIds.includes(s.id)) {
+                            status = "complete"; // NUEVO
+                        }
 
                         return (
                             <m.li key={s.id} className="relative">

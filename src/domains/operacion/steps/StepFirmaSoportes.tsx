@@ -20,6 +20,7 @@ interface StepFirmaSoportesProps {
         next?: () => void;
         prev?: () => void;
     }) => void; // ← NUEVO
+    onAdvance?: () => Promise<void> | void; // ← NUEVO: refresca/hidrata (se recibe desde la page)
 }
 
 const StepFirmaSoportes: React.FC<StepFirmaSoportesProps> = ({
@@ -31,7 +32,8 @@ const StepFirmaSoportes: React.FC<StepFirmaSoportesProps> = ({
     id,
     enabled = true,
     detalle,
-    bindStepActions
+    bindStepActions,
+    onAdvance, // ← NUEVO
 }) => {
     const [reasonCode, setReasonCode] = React.useState<number | null>(null);
     const [reasonDesc, setReasonDesc] = React.useState<string | null>(null);
@@ -52,6 +54,8 @@ const StepFirmaSoportes: React.FC<StepFirmaSoportesProps> = ({
         done: boolean;
         timer: NodeJS.Timeout | null;
     }>>({});
+
+    const completingRef = React.useRef(false); // ← NUEVO: evita doble finalización
 
     const intervalMs = 10000;
     const pauseWhenHidden = true;
@@ -289,14 +293,28 @@ const StepFirmaSoportes: React.FC<StepFirmaSoportesProps> = ({
         setClients(Object.values(grouped));
     }, [detalleOperacionesMap, fallbackRfcTo]);
 
-    const finalizarSiCorresponde = React.useCallback(() => {
+    const finalizarSiCorresponde = React.useCallback(async () => {
         const allDone = operationIds.every((idOp: string | number) => opsStateRef.current[idOp]?.done);
-        if (allDone && !finalizado) {
-            console.log('[StepFirmaSoportes] ✅ Todas las operaciones completadas');
+        if (!allDone || finalizado || completingRef.current) return;
+        completingRef.current = true;
+        console.log('[StepFirmaSoportes] ✅ Todas las operaciones completadas -> hidratando...');
+        try {
+            // Hidratar / refrescar (la page ya pasa refreshFromDetalle como onAdvance)
+            if (onAdvance) {
+                await onAdvance();
+            } else {
+                // fallback opcional (si se quisiera, se podría hacer directamente un getDetalleOperacionesLote aquí)
+                console.warn('[StepFirmaSoportes] onAdvance no definido; no se hidratará automáticamente.');
+            }
+        } catch (e) {
+            console.error('[StepFirmaSoportes] error en onAdvance()', e);
+        } finally {
             setFinalizado(true);
+            // onNext queda como respaldo si algún flujo externo lo provee
+            // (en la page actual no se pasa, el avance ocurre por cambio de estado tras hidratar)
             onNext && onNext();
         }
-    }, [operationIds, finalizado, onNext]);
+    }, [operationIds, finalizado, onAdvance, onNext]);
 
     const tickOperacion = React.useCallback(async (opId: string) => {
         const state = opsStateRef.current[opId];
@@ -328,7 +346,7 @@ const StepFirmaSoportes: React.FC<StepFirmaSoportesProps> = ({
                     clearInterval(state.timer);
                     state.timer = null;
                 }
-                finalizarSiCorresponde();
+                await finalizarSiCorresponde(); // ← AHORA async
             } else {
                 state.ticks += 1;
                 if (state.ticks >= maxTicks) {
@@ -338,7 +356,7 @@ const StepFirmaSoportes: React.FC<StepFirmaSoportesProps> = ({
                         clearInterval(state.timer);
                         state.timer = null;
                     }
-                    finalizarSiCorresponde();
+                    await finalizarSiCorresponde(); // ← AHORA async
                 }
             }
         } catch (e) {
@@ -348,7 +366,7 @@ const StepFirmaSoportes: React.FC<StepFirmaSoportesProps> = ({
                 clearInterval(state.timer);
                 state.timer = null;
             }
-            finalizarSiCorresponde();
+            await finalizarSiCorresponde(); // ← AHORA async
         } finally {
             state.running = false;
         }

@@ -3,6 +3,7 @@ import { StepDef } from "@/src/shared/types/stepper";
 import StepCreacion from "./StepCreacion";
 import StepVerificacion from "./StepVerificacion";
 import StepFirmaSoportes from "./StepFirmaSoportes";
+import StepCotizado from "./StepCotizado";
 
 export const STEPS: StepDef<any>[] = [
     { id: "default", title: "Inicio", description: "Inicio del flujo", icon: "lucide:play-circle" },
@@ -28,7 +29,5 @@ export const stateToComponentMap: Record<
     [EstadoOperacion.Creado]: StepVerificacion,
     [EstadoOperacion.ProceseInicio]: StepVerificacion,
     [EstadoOperacion.CaptureFirmaMiFiel]: StepFirmaSoportes,
-    [EstadoOperacion.Cotizado]: (p) => (
-        <></>
-    ),
+    [EstadoOperacion.Cotizado]: StepCotizado
 };
