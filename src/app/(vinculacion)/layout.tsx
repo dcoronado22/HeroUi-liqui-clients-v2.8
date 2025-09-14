@@ -39,6 +39,7 @@ function VinculacionShell({ children }: { children: React.ReactNode }) {
                     showIsCollabsable={!isMisVinculaciones}
                     showSteps={!isMisVinculaciones}
                     showRfc={!isMisVinculaciones}
+                    showAlianza={!isMisVinculaciones}
                 />
                 <main className="flex-1 min-h-0 -mt-6">{children}</main>
             </div>

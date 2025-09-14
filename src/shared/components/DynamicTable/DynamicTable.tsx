@@ -79,6 +79,9 @@ interface DynamicTableProps {
   // Nueva prop para controlar densidad general
   density?: "comfortable" | "compact";
   isStriped?: boolean;
+  statusFilter?: string;
+  setStatusFilter?: (value: string) => void;
+  statusOptions?: { value: string; label: string }[];
 }
 
 export const DynamicTable: React.FC<DynamicTableProps> = ({
@@ -104,6 +107,13 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
   accordionText = "",
   density = "compact",
   isStriped = false,
+  statusFilter = "all",
+  setStatusFilter,
+  statusOptions = [
+    { value: "all", label: "Todos" },
+    { value: "active", label: "Activo" },
+    { value: "paused", label: "Pausado" },
+  ],
 }) => {
   const [filterValue, setFilterValue] = useState("");
   const [visibleColumns, setVisibleColumns] = useState<Selection>(new Set(initialVisibleColumns));
@@ -111,8 +121,6 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
   const [page, setPage] = useState(1);
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({ column: "", direction: "ascending" });
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [roleFilter, setRoleFilter] = useState("all");
   // Estado para controlar qué filas del acordeón están abiertas
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -165,15 +173,11 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
     }
 
     if (statusFilter !== "all") {
-      filteredData = filteredData.filter((item) => item.status === statusFilter);
-    }
-
-    if (roleFilter !== "all") {
-      filteredData = filteredData.filter((item) => item.role === roleFilter);
+      filteredData = filteredData.filter((item) => item.status?.toLowerCase() === statusFilter.toLowerCase());
     }
 
     return filteredData;
-  }, [data, filterValue, hasSearchFilter, filterableColumns, statusFilter, roleFilter]);
+  }, [data, filterValue, hasSearchFilter, filterableColumns, statusFilter]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -320,30 +324,6 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
               </Dropdown>
             )}
 
-            {allowFiltering && (
-              <Popover placement="bottom-end">
-                <PopoverTrigger>
-                  <Button size={sizeConfig.controlSize} endContent={<Icon icon="lucide:filter" />} variant="flat">
-                    Filtro
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <div className="p-4">
-                    <RadioGroup label="Estatus" value={statusFilter} onValueChange={setStatusFilter}>
-                      <Radio value="all">Todos</Radio>
-                      <Radio value="active">Activo</Radio>
-                      <Radio value="paused">Pausado</Radio>
-                    </RadioGroup>
-                    <RadioGroup label="Rol" value={roleFilter} onValueChange={setRoleFilter}>
-                      <Radio value="all">Todos</Radio>
-                      <Radio value="CEO">CEO</Radio>
-                      <Radio value="Tech Lead">Tech Lead</Radio>
-                    </RadioGroup>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-
             {allowSorting && (
               <Dropdown>
                 <DropdownTrigger>
@@ -418,15 +398,16 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
     filterValue,
     filteredItems.length,
     onSearchChange,
-    roleFilter,
     rowsPerPage,
     selectedKeys,
-    statusFilter,
     visibleColumns,
     actionButton,
     extraTopRight,
     sizeConfig,
-    isCompact
+    isCompact,
+    statusFilter,
+    setStatusFilter,
+    statusOptions
   ]);
 
   const bottomContent = useMemo(() => {

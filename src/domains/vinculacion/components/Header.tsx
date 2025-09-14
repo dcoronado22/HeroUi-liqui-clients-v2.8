@@ -43,9 +43,10 @@ type HeaderProps = {
     showSteps?: boolean;
     showIsCollabsable?: boolean;
     showRfc?: boolean;
+    showAlianza?: boolean;
 };
 
-export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSteps = true, showIsCollabsable = true, showRfc = true }: HeaderProps) {
+export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSteps = true, showIsCollabsable = true, showRfc = true, showAlianza = true }: HeaderProps) {
     const flow = useVinculacionFlow();
     const isAuth = useIsAuthenticated();
     const { instance } = useMsal();
@@ -109,15 +110,17 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
                         width={120}
                         className="hidden dark:block"
                     />
-                    <span className="mx-4">
-                        +
-                    </span>
-                    <Image
-                        alt="Logo"
-                        src="https://s3.us-east-1.amazonaws.com/liquicapital-dev.liquicapital.com/logos/8.png"
-                        width={70}
-                        className="dark:filter-none filter invert"
-                    />
+                    {showAlianza && (<>
+                        <span className="mx-4">
+                            +
+                        </span>
+                        <Image
+                            alt="Logo"
+                            src="https://s3.us-east-1.amazonaws.com/liquicapital-dev.liquicapital.com/logos/8.png"
+                            width={70}
+                            className="dark:filter-none filter invert"
+                        /></>)}
+
 
                 </NavbarBrand>
 
