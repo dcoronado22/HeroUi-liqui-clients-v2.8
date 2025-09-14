@@ -206,11 +206,12 @@ export default function OperacionesClientePage() {
                         allowRowSelection={false}
                         initialVisibleColumns={["fecha", "clientes", "monto", "aforo", "estado", "opciones"]}
                         filterableColumns={["fecha", "estado"]}
-                        itemsPerPage={5}
+                        itemsPerPage={10}
                         isLoading={loading}
                         isAccordion={true}
                         accordionContent={accordionContent}
                         accordionIcon="lucide:chevron-down"
+                        isStriped
                     />
                 </CardBody>
             </Card>

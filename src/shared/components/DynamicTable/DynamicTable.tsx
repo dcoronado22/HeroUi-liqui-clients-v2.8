@@ -76,6 +76,9 @@ interface DynamicTableProps {
   accordionContent?: AccordionRenderFunction;
   accordionIcon?: string;
   accordionText?: string;
+  // Nueva prop para controlar densidad general
+  density?: "comfortable" | "compact";
+  isStriped?: boolean;
 }
 
 export const DynamicTable: React.FC<DynamicTableProps> = ({
@@ -99,6 +102,8 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
   accordionContent,
   accordionIcon = "lucide:chevron-down",
   accordionText = "",
+  density = "compact",
+  isStriped = false,
 }) => {
   const [filterValue, setFilterValue] = useState("");
   const [visibleColumns, setVisibleColumns] = useState<Selection>(new Set(initialVisibleColumns));
@@ -112,6 +117,18 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const hasSearchFilter = Boolean(filterValue);
+
+  const isCompact = density === "compact";
+
+  const sizeConfig = useMemo(() => {
+    return {
+      rowHeight: isCompact ? "h-11" : "h-14",
+      cellPaddingY: isCompact ? "py-2" : "py-4",
+      controlSize: (isCompact ? "sm" : "md") as "sm" | "md" | "lg",
+      accordionButtonVariant: (isCompact ? "light" : "faded") as "flat" | "light" | "faded" | "solid" | "bordered" | "shadow" | "ghost",
+      accordionButtonSize: (isCompact ? "sm" : "md") as "sm" | "md" | "lg",
+    };
+  }, [isCompact]);
 
   // Agregar columna de acordeón si está habilitado
   const columnsWithAccordion = useMemo(() => {
@@ -202,8 +219,8 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
 
         return (
           <Button
-            variant="faded"
-            size="md"
+            variant={sizeConfig.accordionButtonVariant}
+            size={sizeConfig.accordionButtonSize}
             onPress={() => toggleAccordion(item.id)}
             endContent={<Icon icon={accordionIcon} className={`text-lg transition-transform duration-200 ease-in-out ${isExpanded ? 'rotate-180' : 'rotate-0'
               }`} />}
@@ -234,7 +251,7 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
 
       return <span>{String(v)}</span>;
     },
-    [columns, isAccordion, expandedRows, toggleAccordion, accordionIcon]
+    [columns, isAccordion, expandedRows, toggleAccordion, accordionIcon, accordionText, sizeConfig]
   );
 
   const onNextPage = useCallback(() => {
@@ -268,6 +285,7 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
             {allowFiltering && (
               <Input
                 isClearable
+                size={sizeConfig.controlSize}
                 variant="bordered"
                 placeholder="Buscar por..."
                 startContent={<SearchIcon />}
@@ -281,7 +299,7 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
             {allowColumnVisibility && (
               <Dropdown>
                 <DropdownTrigger>
-                  <Button endContent={<Icon icon="lucide:chevron-down" />} variant="flat">
+                  <Button size={sizeConfig.controlSize} endContent={<Icon icon="lucide:chevron-down" />} variant="flat">
                     Columnas
                   </Button>
                 </DropdownTrigger>
@@ -305,7 +323,7 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
             {allowFiltering && (
               <Popover placement="bottom-end">
                 <PopoverTrigger>
-                  <Button endContent={<Icon icon="lucide:filter" />} variant="flat">
+                  <Button size={sizeConfig.controlSize} endContent={<Icon icon="lucide:filter" />} variant="flat">
                     Filtro
                   </Button>
                 </PopoverTrigger>
@@ -329,7 +347,7 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
             {allowSorting && (
               <Dropdown>
                 <DropdownTrigger>
-                  <Button endContent={<Icon icon="lucide:arrow-up-down" />} variant="flat">
+                  <Button size={sizeConfig.controlSize} endContent={<Icon icon="lucide:arrow-up-down" />} variant="flat">
                     Ordenar
                   </Button>
                 </DropdownTrigger>
@@ -365,7 +383,7 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
               <Button
                 color={actionButton.color ?? "primary"}
                 variant={actionButton.variant ?? "solid"}
-                size={actionButton.size ?? "md"}
+                size={actionButton.size ?? sizeConfig.controlSize}
                 isDisabled={actionButton.isDisabled}
                 startContent={actionButton.icon ? <Icon icon={actionButton.icon} /> : undefined}
                 onPress={actionButton.onClick}
@@ -377,8 +395,9 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
 
             <Select
               aria-label="Filas por página"
+              size={sizeConfig.controlSize}
               variant="faded"
-              className="w-[120px]"
+              className={isCompact ? "w-[110px]" : "w-[120px]"}
               defaultSelectedKeys={[rowsPerPage.toString()]}
               onChange={(e) => setRowsPerPage(Number(e.target.value))}
             >
@@ -406,6 +425,8 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
     visibleColumns,
     actionButton,
     extraTopRight,
+    sizeConfig,
+    isCompact
   ]);
 
   const bottomContent = useMemo(() => {
@@ -526,6 +547,7 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
   return (
     <div className="flex flex-col h-full min-h-0">
       <Table
+        isStriped={isStriped}
         key={`table-${expandedRows.size}-${Array.from(expandedRows).join('-')}`}
         aria-label="Dynamic Table"
         isHeaderSticky
@@ -534,9 +556,9 @@ export const DynamicTable: React.FC<DynamicTableProps> = ({
         className="flex-1 flex flex-col h-full"
         classNames={{
           wrapper: "flex-1 h-full min-h-0 max-h-full overflow-auto",
-          th: "py-4",
-          td: "py-4",
-          tr: "h-14",
+          th: sizeConfig.cellPaddingY,
+          td: sizeConfig.cellPaddingY + " align-middle",
+          tr: sizeConfig.rowHeight,
         }}
         selectedKeys={selectedKeys}
         selectionMode={allowRowSelection ? "multiple" : "none"}
