@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-    Card, CardBody, CardHeader, Button, Chip, Spinner, Image, Progress,
+    Card, CardBody, CardHeader, Button, Chip, Spinner, Image, Progress, ScrollShadow,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { redirect } from "next/navigation";
@@ -128,8 +128,8 @@ export default function MisVinculacionesPage() {
                 </Button>
             </div>
 
-            {/* Lista */}
-            <div className="flex flex-col gap-3">
+            {/* Lista con scroll y sombras */}
+            <ScrollShadow className="flex flex-col gap-3 max-h-[70vh] pr-1" hideScrollBar size={28}>
                 {empresas.map((e) => {
                     const { percent, tone } = getEstadoProgress(e.idState);
                     const done = e.idState === 10;
@@ -180,10 +180,6 @@ export default function MisVinculacionesPage() {
                             </CardHeader>
 
                             <CardBody className="pt-0">
-                                <div className="mb-1 flex items-center justify-between text-small">
-                                    <span>Progreso</span>
-                                    <span className="text-default-500 tabular-nums">{percent}%</span>
-                                </div>
                                 <SegmentedProgressBar percent={percent} color={tone} />
                             </CardBody>
                         </Card>
@@ -201,7 +197,7 @@ export default function MisVinculacionesPage() {
                         <span className="font-medium">Agregar nueva vinculación</span>
                     </CardBody>
                 </Card>
-            </div>
+            </ScrollShadow>
         </div>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { redirect, useParams, useSearchParams } from "next/navigation";
+import { redirect, useParams, useSearchParams, useRouter } from "next/navigation"; // <-- agregado useRouter
 import { Card, CardBody, cn, Spinner } from "@heroui/react";
 import VerticalStepper from "@/src/shared/components/Stepper/VerticalStepper";
 import StepActions from "@/src/shared/components/Stepper/StepActions";
@@ -29,6 +29,8 @@ const StateToStepId: Record<number, string> = {
 export default function VinculacionCasePage() {
     const params = useParams<{ id: string }>();
     const search = useSearchParams();
+    const router = useRouter(); // <-- instancia router
+    const didRedirectRef = React.useRef(false); // <-- evita múltiples pushes
     const caseId = params.id;
     const [detalle, setDetalle] = React.useState<any | null>(null);
     const [stepActions, setStepActions] = React.useState<{
@@ -108,7 +110,6 @@ export default function VinculacionCasePage() {
                 claveCiecIsValid: res?.claveCiecIsValid === true,
             };
 
-            // 🔥 IMPORTANTE: Siempre hidratar con los datos del backend
             flow.hydrateFromDetalle({
                 id: v.id,
                 rfc: v.datosRegistroVinculacion?.rfc,
@@ -193,6 +194,20 @@ export default function VinculacionCasePage() {
         })();
         return () => { active = false; };
     }, [refreshFromDetalle]);
+
+    React.useEffect(() => {
+        // Redirección automática si ya está vinculado
+        if (
+            !loading &&
+            !didRedirectRef.current &&
+            flow.currentState === EstadoVinculacion.Vinculado &&
+            flow.id &&
+            flow.rfc
+        ) {
+            didRedirectRef.current = true;
+            router.push(`/operacion/${encodeURIComponent(flow.rfc)}/${flow.id}?nuevo=1`);
+        }
+    }, [loading, flow.currentState, flow.id, flow.rfc, router]);
 
     // Selecciona el componente del paso según el estado
     const StepComponent =

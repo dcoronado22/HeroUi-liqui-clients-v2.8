@@ -58,7 +58,10 @@ export default function OperacionesClientePage() {
             try {
                 setPreOfertaLoading(true);
                 // Usar el id dinámico recibido en la ruta en lugar de uno hardcodeado
-                const res = await OperacionService.genereOferta({ rfc, id });
+                const res = await OperacionService.genereOferta({
+                    rfc, id: "18c84d53-1c81-4ecd-a5d8-622fec7e8289"
+                });
+                // const res = await OperacionService.genereOferta({ rfc, id });
                 if (!cancelled && res?.succeeded) {
                     setPreOfertaGenerada(true);
                     setPreOfertaData(res);
