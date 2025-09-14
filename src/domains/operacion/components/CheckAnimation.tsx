@@ -131,7 +131,7 @@ export const CheckAnimation = forwardRef<CheckAnimationHandle, CheckAnimationPro
                 opacity: 1,
                 clipPath: 'circle(160% at 50% 50%)',
                 transition: {
-                    duration: reduced ? 0.4 : 1.1,
+                    duration: reduced ? 0.4 : 10.5,
                     ease: [0.16, 1, 0.3, 1]
                 }
             });
@@ -264,7 +264,7 @@ export const CheckAnimation = forwardRef<CheckAnimationHandle, CheckAnimationPro
     const titleColorClass = inverted ? 'text-white' : colorText;
     const subtitleColorClass = inverted ? 'text-white/90' : 'text-default-600';
 
-    const containerClasses = `relative flex ${coverParent ? 'w-full h-full' : 'flex-col'} flex-col items-center justify-center ${className || ''}`;
+    const containerClasses = `relative flex ${coverParent ? 'w-full h-full' : 'flex-col'} flex-col min-w-[100dvw] min-h-[100dvh] items-center justify-center ${className || ''}`;
 
     return (
         <div
@@ -272,6 +272,7 @@ export const CheckAnimation = forwardRef<CheckAnimationHandle, CheckAnimationPro
             className={containerClasses}
             role="status"
             aria-live="polite"
+
         >
             {(fullScreen || coverParent) && (
                 <motion.div
