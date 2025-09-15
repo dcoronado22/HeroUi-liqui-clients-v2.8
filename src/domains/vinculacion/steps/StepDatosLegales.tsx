@@ -8,7 +8,7 @@ import { VinculacionService } from "../services/vinculacion.service";
 import { estadosEntry } from "@/config/constants";
 import { Icon } from "@iconify/react";
 
-export default function StepDatosLegales({ detalle }: { detalle: any }) {
+export default function StepDatosLegales({ detalle, bindStepActions }: { detalle: any, bindStepActions?: (a: { next?: () => Promise<void>, nextDisabled?: boolean }) => void }) {
     const [selected, setSelected] = React.useState("apoderado");
     const [validity, setValidity] = React.useState({
         apoderado: false,
@@ -58,6 +58,39 @@ export default function StepDatosLegales({ detalle }: { detalle: any }) {
             }
         } catch (err) {
             console.error("Error al guardar datos", err);
+        }
+    };
+
+    const handleNext = async () => {
+        const payload = {
+            rfc: detalle?.vinculacion?.datosRegistroVinculacion?.rfc,
+            id: detalle?.vinculacion?.id,
+            apoderadoLegalData: normalizeFormData(formsData.apoderadoLegalData),
+            escrituraData: normalizeFormData(formsData.escrituraData),
+            desembolsoData: normalizeFormData(formsData.desembolsoData),
+        };
+
+        // Paso 1: Guardar cambios de contratos
+        await VinculacionService.almaceneDatosContrato(payload);
+
+        // Paso 2: Avanzar flujo (state=9)
+        const folderId = detalle?.vinculacion?.datosExpedienteAzul?.folder_id;
+        if (!folderId) {
+            console.error("Falta FolderId en detalle");
+            return;
+        }
+
+        try {
+            const res = await VinculacionService.avanzarDatosLegales({
+                id: payload.id,
+                rfc: payload.rfc,
+                folderId: String(folderId),
+            });
+            if (res?.responseData?.ReasonCode?.Description) {
+                console.log("Avance state=9:", res.responseData.ReasonCode.Description);
+            }
+        } catch (e) {
+            console.error("Error al avanzar a state=9", e);
         }
     };
 
@@ -111,6 +144,18 @@ export default function StepDatosLegales({ detalle }: { detalle: any }) {
             cuenta: validateInitial(formsData.desembolsoData, "cuenta"),
         });
     }, []);
+
+    React.useEffect(() => {
+        const allValid =
+            validateInitial(formsData.apoderadoLegalData, "apoderado") &&
+            validateInitial(formsData.escrituraData, "escrituracion") &&
+            validateInitial(formsData.desembolsoData, "cuenta");
+
+        bindStepActions?.({
+            next: handleNext,
+            nextDisabled: !allValid,
+        });
+    }, [formsData, bindStepActions]);
 
     function normalizeFormData(data: any) {
         if (!data) return data;

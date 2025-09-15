@@ -12,4 +12,5 @@ export enum EstadoVinculacion {
     Vinculado = 10,
     Rechazado = 11,
     Cancelado = 12,
+    Pendientes = 99
 }

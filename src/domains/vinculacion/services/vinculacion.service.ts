@@ -185,7 +185,7 @@ export const VinculacionService = {
         });
     },
 
-    async crearExpedienteAzul(params: {
+        async crearExpedienteAzul(params: {
         id: string;
         rfc: string;
         name: string;
@@ -293,24 +293,43 @@ export const VinculacionService = {
         });
       },
 
-    async uploadDocument(payload: UploadDocumentBody) {
-        const params = new URLSearchParams({
-            Id: payload.id,
-            Rfc: payload.rfc,
-            UseTemp: payload.useTemp ? "true" : "false",
-            "File-Name": payload.fileName,
-            "Content-Type": payload.contentType,
-        }).toString();
-        return apiCall<UploadDocumentRes>(`/vinculaciones/UploadDocument?${params}`, {
+      
+
+    async avanzarDatosLegales(params: { id: string; rfc: string; folderId: string }) {
+        return apiCall<any>(`${BASE}/Vinculacion`, {
+          method: "POST",
+          body: {
+            state: 9,
+            requestData: {
+              FolderId: params.folderId,
+              Rfc: params.rfc,
+              Id: params.id,
+            },
+          },
+        });
+      },
+
+    async valideDocsRazonesFinancieras(params: { rfc?: string | null; id?: string | null }) {
+        return apiCall<any>(`${BASE}/valideDocsRazonesFinancieras`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                Base64Data: payload.Base64Data,
-                contentType: payload.contentType,
-                fileName: payload.fileName,
-                id: payload.id,
-                rfc: payload.rfc,
-            }),
+            body: JSON.stringify(params),
+        });
+    },
+
+    async uploadDocument(payload: UploadDocumentBody) {
+        const qs = new URLSearchParams({
+            Id: String(payload.id ?? ""),
+            Rfc: String(payload.rfc ?? ""),
+            UseTemp: String(Boolean(payload.useTemp)),
+            "File-Name": payload.fileName,
+            "Content-Type": payload.contentType,
+          }).toString();
+        
+          return apiCall<UploadDocumentRes>(`${BASE}/UploadDocument?${qs}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
         });
     },
 

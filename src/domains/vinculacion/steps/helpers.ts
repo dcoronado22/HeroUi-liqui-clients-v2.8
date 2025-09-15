@@ -47,3 +47,47 @@ export function computeHeaderProgress<TCtx>(
 
     return { title, index, total };
 }
+
+export function areDatosLegalesValid(res: any) {
+    const apoderado = res?.apoderadoLegalData;
+    const escritura = res?.escrituraData;
+    const desembolso = res?.desembolsoData;
+  
+    const validApoderado = !!(
+      apoderado?.nombre &&
+      apoderado?.numeroEscritura &&
+      apoderado?.fechaEscritura &&
+      apoderado?.nombreNotario &&
+      apoderado?.numeroNotario &&
+      apoderado?.ciudadNotario &&
+      apoderado?.estadoNotario &&
+      apoderado?.numeroFolioMercantil &&
+      apoderado?.ciudadRegistro &&
+      apoderado?.estadoRegistro
+    );
+  
+    const validEscritura = !!(
+      escritura?.numeroEscritura &&
+      escritura?.fechaEscritura &&
+      escritura?.nombreNotario &&
+      escritura?.numeroNotario &&
+      escritura?.ciudadNotario &&
+      escritura?.estadoNotario &&
+      escritura?.numeroFolioMercantil &&
+      escritura?.ciudadRegistro &&
+      escritura?.estadoRegistro &&
+      escritura?.deudorFirmaElectronica
+    );
+  
+    const validDesembolso = !!(
+      desembolso?.banco &&
+      desembolso?.beneficiario &&
+      desembolso?.numeroCuenta &&
+      /^\d{10,16}$/.test(desembolso?.numeroCuenta) &&
+      desembolso?.clabe &&
+      /^\d{18}$/.test(desembolso?.clabe) &&
+      desembolso?.certificacionBancaria
+    );
+  
+    return validApoderado && validEscritura && validDesembolso;
+  }

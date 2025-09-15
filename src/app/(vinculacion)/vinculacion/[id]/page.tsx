@@ -9,6 +9,7 @@ import { VinculacionService } from "@/src/domains/vinculacion/services/vinculaci
 import { useVinculacionFlow } from "@/src/domains/vinculacion/context/flow-context";
 import { stateToComponentMap, StateToStepId, STEPS } from "@/src/domains/vinculacion/steps";
 import { EstadoVinculacion } from "@/src/domains/vinculacion/estados";
+import { areDatosLegalesValid } from "@/src/domains/vinculacion/steps/helpers";
 
 export default function VinculacionCasePage() {
     const params = useParams<{ id: string }>();
@@ -77,11 +78,15 @@ export default function VinculacionCasePage() {
             const res = await VinculacionService.getDetalle(caseId, rfc);
             const v = res?.vinculacion;
 
+            console.log("🔎 getDetalle Response:", res);
+            console.log("🔎 v.state:", v?.state);
+
             if (!v) {
                 setErrorMsg("No se encontró la vinculación.");
                 redirect("/vinculacion/nuevo");
                 return;
             }
+
 
             setDetalle(res);
 
@@ -120,6 +125,27 @@ export default function VinculacionCasePage() {
                 flow.setExpedientePct(null);
             }
 
+            if (String(v?.state) === String(EstadoVinculacion.CaptureCargueFormatosExpediente)) {
+                console.log("✅ Entró al if de state=9 desde getDetalle");
+
+                const allLegalesValid = areDatosLegalesValid(res);
+
+                console.log("🔎 Validaciones calculadas en front:", allLegalesValid);
+
+                if (allLegalesValid) {
+                    console.log("🚀 Forzando estado Pendientes");
+                    flow.hydrateFromDetalle({
+                        id: v.id,
+                        rfc: v.datosRegistroVinculacion?.rfc,
+                        state: EstadoVinculacion.Pendientes,
+                        flags,
+                        folderId: v?.datosExpedienteAzul?.folder_id ?? null,
+                    });
+                    setDetalle(res);
+                    return;
+                }
+            }
+
             setErrorMsg(null);
         } catch (error) {
             console.error("Error loading detalle:", error);
@@ -127,6 +153,30 @@ export default function VinculacionCasePage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [caseId, search]);
+
+    React.useEffect(() => {
+        if (!loading && detalle?.vinculacion?.state === 9) {
+            (async () => {
+                try {
+                    const res = await VinculacionService.stateManager({
+                        state: 9,
+                        requestData: {
+                            FolderId: String(detalle?.vinculacion?.datosExpedienteAzul?.folder_id),
+                            Rfc: detalle?.vinculacion?.datosRegistroVinculacion?.rfc,
+                            Id: detalle?.vinculacion?.id,
+                        },
+                    });
+
+                    if (res) {
+                        console.log("✅ Respuesta completa de state=9:", res);
+                        setDetalle(res); // 👈 aquí ya tienes los flags correctos
+                    }
+                } catch (e) {
+                    console.error("Error ejecutando state=9", e);
+                }
+            })();
+        }
+    }, [loading, detalle?.vinculacion?.state]);
 
     const withRefresh = React.useCallback(
         (action?: () => Promise<void> | void) =>

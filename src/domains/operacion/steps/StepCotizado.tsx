@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CheckAnimation } from '../components/CheckAnimation';
+import { CheckAnimation } from '../../../shared/components/CheckAnimation';
 // ...existing code (si hubiera más imports)...
 import { Accordion, AccordionItem, Tooltip, Chip, Card, CardHeader, CardBody, CardFooter, Progress, Divider } from '@heroui/react';
 import { Icon } from '@iconify/react';

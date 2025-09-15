@@ -5,6 +5,7 @@ import StepDatosBuro from "./StepDatosBuro";
 import StepSeleccionClientes from "./StepSeleccionClientes";
 import { StepDef } from "@/src/shared/types/stepper";
 import StepDatosLegales from "./StepDatosLegales";
+import StepPendientes from "./StepPendientes";
 
 export const STEPS: StepDef<any>[] = [
   { id: "registro", title: "Registro", description: "Crear vinculación", icon: "lucide:clipboard-edit" },
@@ -14,7 +15,8 @@ export const STEPS: StepDef<any>[] = [
   { id: "firma-avales", title: "Firma Avales", description: "Autorizaciones", icon: "lucide:signature", visible: (ctx) => ctx.aplicaAval },
   { id: "formato-expediente", title: "Formato Expediente", description: "Backend-only", icon: "lucide:folder-cog", visible: () => false },
   { id: "seleccion-clientes", title: "Selección clientes", description: "Estudio de cupo", icon: "lucide:list-checks" },
-  { id: "datos-legal", title: "Espera análisis", description: "Espera", icon: "lucide:hourglass", visible: () => true },
+  { id: "datos-legal", title: "Datos Legales", description: "Datos legales", icon: "fluent:form-48-regular", visible: () => true },
+  { id: "pendientes", title: "Pendientes", description: "Validaciones y documentos", icon: "lucide:clock" },
   { id: "resumen", title: "Vinculado", description: "Finalizado", icon: "lucide:check-circle-2" },
 ];
 
@@ -27,6 +29,7 @@ export const StateToStepId: Record<number, string> = {
   [EstadoVinculacion.SeleccionClientesEstudio]: "seleccion-clientes",
   [EstadoVinculacion.CaptureCargueFormatosExpediente]: "datos-legal",
   [EstadoVinculacion.Vinculado]: "resumen",
+  [EstadoVinculacion.Pendientes]: "pendientes",
 };
 
 export const stateToComponentMap: Record<
@@ -47,6 +50,7 @@ export const stateToComponentMap: Record<
   ),
   [EstadoVinculacion.CaptureCargueFormatosExpediente]: StepDatosLegales,
   [EstadoVinculacion.SeleccionClientesEstudio]: StepSeleccionClientes,
+  [EstadoVinculacion.Pendientes]: StepPendientes,
   [EstadoVinculacion.Vinculado]: (p) => (
     <StepPlaceholder title="Vinculado" note="Proceso finalizado." {...p} />
   ),
