@@ -10,6 +10,7 @@ import { useVinculacionFlow } from "@/src/domains/vinculacion/context/flow-conte
 import { stateToComponentMap, StateToStepId, STEPS } from "@/src/domains/vinculacion/steps";
 import { EstadoVinculacion } from "@/src/domains/vinculacion/estados";
 import { areDatosLegalesValid } from "@/src/domains/vinculacion/steps/helpers";
+import { CheckAnimation } from "@/src/shared/components/CheckAnimation";
 
 export default function VinculacionCasePage() {
     const params = useParams<{ id: string }>();
@@ -29,8 +30,10 @@ export default function VinculacionCasePage() {
     const [loading, setLoading] = React.useState(true);
     const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
     const [loadingNext, setLoadingNext] = React.useState(false);
+    const [validationsLoading, setValidationsLoading] = React.useState(false);
+    const [allValid, setAllValid] = React.useState(false);
+    const [showCheckAnimation, setShowCheckAnimation] = React.useState(false);
 
-    // 🔥 NUEVO: Resetear contexto cuando cambia el caseId
     React.useEffect(() => {
         // Si ya hay un ID en el contexto y es diferente al actual, resetear
         if (flow.id && flow.id !== caseId) {
@@ -158,6 +161,7 @@ export default function VinculacionCasePage() {
         if (!loading && detalle?.vinculacion?.state === 9) {
             (async () => {
                 try {
+                    setValidationsLoading(true);
                     const res = await VinculacionService.stateManager({
                         state: 9,
                         requestData: {
@@ -166,13 +170,32 @@ export default function VinculacionCasePage() {
                             Id: detalle?.vinculacion?.id,
                         },
                     });
-
                     if (res) {
-                        console.log("✅ Respuesta completa de state=9:", res);
-                        setDetalle(res); // 👈 aquí ya tienes los flags correctos
+                        setDetalle(res);
+
+                        // 👇 calcular si TODO está validado
+                        const d = res?.responseData ?? res;
+                        const validations = [
+                            d?.RazonesFinancierasValidas,
+                            d?.DocumentsIsValid,
+                            d?.BuroValido,
+                            d?.EscrituraDataValida,
+                            d?.ApoderadoLegalDataValida,
+                            d?.DesembolsoDataValida,
+                        ];
+                        const allOk = validations.every(Boolean);
+                        setAllValid(allOk);
+
+                        if (allOk) {
+                            setTimeout(() => {
+                                setShowCheckAnimation(true);
+                            }, 2000);
+                        }
                     }
                 } catch (e) {
                     console.error("Error ejecutando state=9", e);
+                } finally {
+                    setValidationsLoading(false);
                 }
             })();
         }
@@ -265,6 +288,7 @@ export default function VinculacionCasePage() {
                             currentId={currentStepId}
                             clickable={false}
                             compact={collapsed}
+                            markActiveAsCompleteIds={allValid ? [currentStepId] : []} // <-- NUEVO
                         />
                     </CardBody>
                 </Card>
@@ -285,6 +309,24 @@ export default function VinculacionCasePage() {
                                             {errorMsg}
                                         </div>
                                     </div>
+                                ) : showCheckAnimation ? ( // 👈 NUEVO
+                                    <div className="relative w-min-[3000px] -mx-20 -my-5 h-[90dvh]">
+                                        <CheckAnimation
+                                            coverParent
+                                            keepHeroVisible
+                                            keepBackgroundVisible
+                                            title="¡Vinculación exitosa!"
+                                            subtitle="Ahora serás redirigido a la operación..."
+                                            autoHideAfterMs={5000}
+                                            holdVisibleMs={4000}
+                                            onComplete={() => {
+                                                if (!didRedirectRef.current && flow.id && flow.rfc) {
+                                                    didRedirectRef.current = true;
+                                                    router.push(`/operacion/${encodeURIComponent(flow.rfc!)}/${flow.id}?nuevo=1`);
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 ) : StepComponent ? (
                                     <StepComponent
                                         id={flow.id!}
@@ -292,6 +334,8 @@ export default function VinculacionCasePage() {
                                         detalle={detalle}
                                         bindStepActions={bindStepActions}
                                         onAdvance={refreshFromDetalle}
+                                        isEvaluating={validationsLoading}
+                                        allValid={allValid} // <-- NUEVO
                                     />
                                 ) : (
                                     <div className="text-default-500">
@@ -301,13 +345,15 @@ export default function VinculacionCasePage() {
                             </div>
 
                             {/* FOOTER */}
-                            <StepActions
-                                onPrev={stepActions.prev}
-                                onNext={stepActions.next}
-                                disablePrev={stepActions.prevDisabled}
-                                disableNext={stepActions.nextDisabled}
-                                loadingNext={loadingNext} // <-- ya está correcto
-                            />
+                            {!allValid && (
+                                <StepActions
+                                    onPrev={stepActions.prev}
+                                    onNext={stepActions.next}
+                                    disablePrev={stepActions.prevDisabled}
+                                    disableNext={stepActions.nextDisabled}
+                                    loadingNext={loadingNext} // <-- ya está correcto
+                                />
+                            )}
                         </div>
                     </CardBody>
                 </Card>

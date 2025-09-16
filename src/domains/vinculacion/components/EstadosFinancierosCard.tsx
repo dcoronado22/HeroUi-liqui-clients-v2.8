@@ -26,6 +26,7 @@ export const EstadosFinancierosCard: React.FC<Props> = ({ rfc, id }) => {
         recientes: false,
         historicos: false,
     });
+    const [loadingVerify, setLoadingVerify] = React.useState(true);
 
     const fileInputRefRecientes = React.useRef<HTMLInputElement>(null);
     const fileInputRefHistoricos = React.useRef<HTMLInputElement>(null);
@@ -36,7 +37,11 @@ export const EstadosFinancierosCard: React.FC<Props> = ({ rfc, id }) => {
     }, []);
 
     const verifyDocuments = async () => {
-        if (!effectiveId || !effectiveRfc) return;
+        setLoadingVerify(true);
+        if (!effectiveId || !effectiveRfc) {
+            setLoadingVerify(false);
+            return;
+        }
         try {
             const data = await VinculacionService.valideDocsRazonesFinancieras({
                 rfc: effectiveRfc,
@@ -52,6 +57,8 @@ export const EstadosFinancierosCard: React.FC<Props> = ({ rfc, id }) => {
                 description: "No se pudieron verificar los documentos.",
                 color: "danger",
             });
+        } finally {
+            setLoadingVerify(false);
         }
     };
 
@@ -132,9 +139,9 @@ export const EstadosFinancierosCard: React.FC<Props> = ({ rfc, id }) => {
                 />
                 <Button
                     color="primary"
-                    variant={isUploaded ? "flat" : "solid"}
+                    variant={isUploaded || loadingVerify || isLoading ? "flat" : "solid"}
                     onPress={() => fileInputRef.current?.click()}
-                    isDisabled={isLoading || isUploaded}
+                    isDisabled={isLoading || isUploaded || loadingVerify}
                     startContent={
                         isLoading ? (
                             <Spinner size="sm" />

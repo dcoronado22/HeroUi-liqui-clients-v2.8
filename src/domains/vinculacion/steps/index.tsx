@@ -17,7 +17,6 @@ export const STEPS: StepDef<any>[] = [
   { id: "seleccion-clientes", title: "Selección clientes", description: "Estudio de cupo", icon: "lucide:list-checks" },
   { id: "datos-legal", title: "Datos Legales", description: "Datos legales", icon: "fluent:form-48-regular", visible: () => true },
   { id: "pendientes", title: "Pendientes", description: "Validaciones y documentos", icon: "lucide:clock" },
-  { id: "resumen", title: "Vinculado", description: "Finalizado", icon: "lucide:check-circle-2" },
 ];
 
 export const StateToStepId: Record<number, string> = {

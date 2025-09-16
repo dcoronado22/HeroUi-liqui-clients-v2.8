@@ -47,9 +47,23 @@ const Ctx = React.createContext<(FlowState & Actions) | null>(null);
 
 export function VinculacionFlowProvider({ children }: { children: React.ReactNode }) {
     const [state, setState] = React.useState<FlowState>(initialState);
-    const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = React.useState<boolean>(() => {
+        if (typeof window !== "undefined") {
+            const stored = sessionStorage.getItem("vinculacion:sidebarCollapsed");
+            return stored === "true";
+        }
+        return false;
+    });
 
-    const toggleSidebar = React.useCallback(() => setSidebarCollapsed(v => !v), []);
+    const toggleSidebar = React.useCallback(() => {
+        setSidebarCollapsed((prev) => {
+            const next = !prev;
+            if (typeof window !== "undefined") {
+                sessionStorage.setItem("vinculacion:sidebarCollapsed", String(next));
+            }
+            return next;
+        });
+    }, []);
 
     const setIdRfc = React.useCallback((id: string, rfc: string) => {
         setState((s) => ({ ...s, id, rfc }));
@@ -78,9 +92,12 @@ export function VinculacionFlowProvider({ children }: { children: React.ReactNod
     }, []); // NUEVO
 
     const reset = React.useCallback(() => {
-        console.log("Resetting vinculacion context");
-        setState({ ...initialState, sidebarCollapsed, toggleSidebar });
-    }, [sidebarCollapsed, toggleSidebar]);
+        setState((prev) => ({
+            ...initialState,
+            sidebarCollapsed: prev.sidebarCollapsed, // 👈 mantenemos el estado guardado
+            toggleSidebar,
+        }));
+    }, [toggleSidebar]);
 
     const needsReset = React.useCallback((newId: string, newRfc?: string) => {
         if (!state.id && !state.rfc) return false;

@@ -33,7 +33,7 @@ import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { ThemeSwitch } from "@/components/theme-switch"; // tu componente
 import { useVinculacionFlow } from "../context/flow-context";
 import { redirect } from "next/navigation";
-import { StepExpedienteModal } from "@/src/domains/vinculacion/steps/Expediente/StepExpedienteModal.tsx";
+import { StepExpedienteModal } from "@/src/domains/vinculacion/steps/Expediente/StepExpedienteModal";
 
 type HeaderProps = {
     stepTitle: string;
@@ -94,7 +94,7 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
                 </Tooltip>)}
 
                 <NavbarBrand
-                    className={`bg-content2 dark:bg-content2 absolute left-1/2 top-1/2 hidden h-12 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 transform items-center px-4 sm:flex rounded-full border border-default-300 dark:border-default-100/40 shadow-lg p-0 lg:px-10`}
+                    className={`bg-content2 dark:bg-content2 absolute left-1/2 top-1/2 hidden h-12 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 transform items-center px-4 sm:flex rounded-full border border-default-200 dark:border-default-100/40 shadow-lg p-0 lg:px-10`}
                 >
                     {/* Light mode */}
                     <Image

@@ -1,19 +1,21 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardBody, Tooltip, Accordion, AccordionItem, Progress, Chip, Badge } from "@heroui/react";
+import { Card, CardBody, Tooltip, Chip, Card as HeroCard } from "@heroui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { EstadosFinancierosCard } from "../components/EstadosFinancierosCard";
 
 type Props = {
     detalle: any;
+    isEvaluating?: boolean;
+    allValid?: boolean;
 };
 
-export default function StepPendientes({ detalle }: Props) {
+export default function StepPendientes({ detalle, isEvaluating = false, allValid = false }: Props) {
     const data = detalle?.responseData ?? detalle;
 
-    const validations = [
+    let validations = [
         { key: "finanzas", name: "Razones financieras", valid: data?.RazonesFinancierasValidas, icon: "lucide:trending-up" },
         { key: "docs", name: "Documentos cargados", valid: data?.DocumentsIsValid, icon: "lucide:folder-open" },
         { key: "buro", name: "Buró de crédito", valid: data?.BuroValido, icon: "lucide:shield-check" },
@@ -22,32 +24,25 @@ export default function StepPendientes({ detalle }: Props) {
         { key: "cuenta", name: "Estado de cuenta", valid: data?.DesembolsoDataValida, icon: "lucide:wallet" },
     ];
 
+    // NUEVO: Si allValid, fuerza todos los pasos como válidos
+    if (allValid) {
+        validations = validations.map(v => ({ ...v, valid: true }));
+    }
+
     const documents = data?.Payload?.document_list ?? [];
-    const completedSteps = validations.filter(v => v.valid).length;
+    const completedSteps = validations.filter(v => v.valid === true).length;
     const progressPercentage = (completedSteps / validations.length) * 100;
 
-    const [loaded, setLoaded] = React.useState(false);
-
-    React.useEffect(() => {
-        const timer = setTimeout(() => setLoaded(true), 100);
-        return () => clearTimeout(timer);
-    }, []);
-
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <Card shadow="none" className="">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <Card shadow="none">
                 <CardBody className="p-3">
-                    {/* Header mejorado */}
                     <div className="mb-3">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-4 px-3">
                             <div className="flex items-center gap-3">
                                 <div>
                                     <h2 className="text-lg font-bold ">
-                                        {loaded ? "Pendientes de Validación" : "Validando..."}
+                                        {isEvaluating ? "Validando..." : "Pendientes de Validación"}
                                     </h2>
                                     <p className="text-sm text-gray-500 ">
                                         Completa los siguientes pasos para finalizar la vinculación
@@ -55,7 +50,7 @@ export default function StepPendientes({ detalle }: Props) {
                                 </div>
                             </div>
                             <Chip
-                                color={progressPercentage === 100 ? "success" : "warning"}
+                                color={progressPercentage === 100 ? "success" : (isEvaluating ? "primary" : "warning")}
                                 variant="flat"
                                 size="md"
                                 className="font-semibold"
@@ -65,11 +60,11 @@ export default function StepPendientes({ detalle }: Props) {
                         </div>
                     </div>
 
-                    {/* Timeline mejorado */}
                     <VerticalTimeline
                         validations={validations}
                         documents={documents}
                         detalle={detalle}
+                        isEvaluating={isEvaluating} // 👈 pásalo al timeline
                     />
                 </CardBody>
             </Card>
@@ -78,66 +73,56 @@ export default function StepPendientes({ detalle }: Props) {
 }
 
 interface VerticalTimelineProps {
-    validations: { key: string; name: string; valid: boolean; icon: string }[];
+    validations: { key: string; name: string; valid: boolean | undefined; icon: string }[];
     documents: any[];
     detalle: any;
+    isEvaluating: boolean;
 }
 
-const VerticalTimeline: React.FC<VerticalTimelineProps> = ({ validations, documents, detalle }) => {
-    const [loaded, setLoaded] = React.useState(false);
+const VerticalTimeline: React.FC<VerticalTimelineProps> = ({ validations, documents, detalle, isEvaluating }) => {
     const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
-
-    React.useEffect(() => {
-        const timer = setTimeout(() => setLoaded(true), 100);
-        return () => clearTimeout(timer);
-    }, []);
 
     const containerVariants = {
         hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1, delayChildren: 0.1 },
-        },
+        show: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
     };
-
     const itemVariants = {
         hidden: { opacity: 0, x: -20 },
         show: { opacity: 1, x: 0, transition: { duration: 0.3, ease: "easeOut" } },
     };
 
     const invalidDocs = documents.filter((doc) =>
-        ["preparing", "invalid", "reviewing"].includes(doc.status?.toLowerCase())
+        ["preparing", "invalid", "reviewing"].includes(String(doc.status || "").toLowerCase())
     );
 
     const toggleExpanded = (key: string) => {
         setExpandedItems(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(key)) {
-                newSet.delete(key);
-            } else {
-                newSet.add(key);
-            }
-            return newSet;
+            const ns = new Set(prev);
+            ns.has(key) ? ns.delete(key) : ns.add(key);
+            return ns;
         });
     };
 
     return (
-        <motion.div
-            className="relative"
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-        >
-            {/* Línea conectora mejorada */}
-            <div className="absolute left-[24px] ml-5 top-8 bottom-8 w-[2px] bg-gradient-to-b from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-800 dark:to-gray-700" />
+        <motion.div className="relative" variants={containerVariants} initial="hidden" animate="show">
+            <div className="absolute left-[24px] ml-3 top-8 bottom-8 w-[2px] bg-gradient-to-b from-gray-200 via-gray-300 to-gray-200" />
 
             {validations.map((val, i) => {
-                const status: "loading" | "success" | "error" | "pending" =
-                    !loaded ? "pending" : val.valid ? "success" : "error";
+                // Tri-estado + dependencia del request real
+                let status: "loading" | "success" | "error" | "pending";
+                if (isEvaluating) {
+                    status = "loading"; // 👈 mientras corre state=9, TODO muestra spinner
+                } else if (val.valid === true) {
+                    status = "success";
+                } else if (val.valid === false) {
+                    // Caso especial: buró "no valid" lo mostramos como pendiente (suele demorar)
+                    status = val.key === "buro" ? "pending" : "error";
+                } else {
+                    // undefined (no vino flag) → pendiente, no error
+                    status = "pending";
+                }
 
                 let subtitle: string | undefined;
-                let additionalInfo: React.ReactNode | undefined;
-
                 if (val.key === "docs") {
                     subtitle = val.valid
                         ? "Todos los documentos están validados correctamente"
@@ -146,21 +131,22 @@ const VerticalTimeline: React.FC<VerticalTimelineProps> = ({ validations, docume
                     subtitle = val.valid
                         ? "Todas las razones financieras están validadas"
                         : "Revisión de razones financieras requerida";
+                } else if (val.key === "buro") {
+                    subtitle = val.valid
+                        ? "Buró de crédito validado correctamente"
+                        : "El buró de crédito está pendiente de validación";
                 } else {
                     subtitle = val.valid
                         ? "Validación completada exitosamente"
-                        : "Este paso requiere tu atención";
+                        : "Este paso está pendiente o ha sido rechazado";
                 }
 
-                const hasDetails = (val.key === "docs" && !val.valid && invalidDocs.length > 0) ||
+                const hasDetails =
+                    (val.key === "docs" && !val.valid && invalidDocs.length > 0) ||
                     (val.key === "finanzas" && !val.valid);
 
                 return (
-                    <motion.div
-                        key={`val-${val.key}`}
-                        className="mb-[4.2dvh] last:mb-0 px-5"
-                        variants={itemVariants}
-                    >
+                    <motion.div key={`val-${val.key}`} className="mb-[4.2dvh] last:mb-0 px-3" variants={itemVariants}>
                         <TimelineItem
                             title={val.name}
                             subtitle={subtitle}
@@ -172,7 +158,7 @@ const VerticalTimeline: React.FC<VerticalTimelineProps> = ({ validations, docume
                             onToggle={() => hasDetails && toggleExpanded(val.key)}
                         />
 
-                        {/* Contenido expandible para documentos */}
+                        {/* Detalle documentos */}
                         <AnimatePresence>
                             {val.key === "docs" && !val.valid && invalidDocs.length > 0 && expandedItems.has(val.key) && (
                                 <motion.div
@@ -182,20 +168,20 @@ const VerticalTimeline: React.FC<VerticalTimelineProps> = ({ validations, docume
                                     transition={{ duration: 0.3 }}
                                     className="ml-16 mt-3 overflow-hidden"
                                 >
-                                    <Card shadow="sm" className="">
+                                    <HeroCard shadow="sm">
                                         <CardBody className="p-4">
                                             <div className="space-y-3">
-                                                {invalidDocs.map((doc) => (
+                                                {invalidDocs.map((doc: any) => (
                                                     <DocumentItem key={doc.document_id} doc={doc} />
                                                 ))}
                                             </div>
                                         </CardBody>
-                                    </Card>
+                                    </HeroCard>
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
-                        {/* Contenido expandible para finanzas */}
+                        {/* Detalle finanzas */}
                         <AnimatePresence>
                             {val.key === "finanzas" && !val.valid && expandedItems.has(val.key) && (
                                 <motion.div
@@ -205,14 +191,14 @@ const VerticalTimeline: React.FC<VerticalTimelineProps> = ({ validations, docume
                                     transition={{ duration: 0.3 }}
                                     className="ml-16 mt-3 overflow-hidden"
                                 >
-                                    <Card shadow="sm" className="">
+                                    <HeroCard shadow="sm">
                                         <CardBody className="p-4">
                                             <EstadosFinancierosCard
                                                 rfc={detalle?.vinculacion?.datosRegistroVinculacion?.rfc}
                                                 id={detalle?.vinculacion?.id}
                                             />
                                         </CardBody>
-                                    </Card>
+                                    </HeroCard>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -235,14 +221,7 @@ interface TimelineItemProps {
 }
 
 const TimelineItem: React.FC<TimelineItemProps> = ({
-    title,
-    subtitle,
-    status,
-    icon,
-    isLast,
-    hasDetails,
-    isExpanded,
-    onToggle
+    title, subtitle, status, icon, isLast, hasDetails, isExpanded, onToggle
 }) => {
     const statusConfig = {
         loading: {
@@ -265,12 +244,12 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
         },
         pending: {
             iconStatus: "lucide:clock",
-            color: "text-warning-600 dark:text-warning-400",
-            bgColor: "bg-yellow-50 dark:bg-yellow-900", // <-- más notorio
+            color: "text-warning-600 dark:text-warning-900",
+            bgColor: "bg-yellow-50 dark:bg-yellow-600",
             borderColor: "border-yellow-200 dark:border-yellow-400",
             tooltip: "Pendiente de validación",
             spin: false,
-            badge: { color: "warning", text: "Pendiente" } // <-- texto más claro
+            badge: { color: "warning", text: "Pendiente" }
         },
         error: {
             iconStatus: "lucide:x",
@@ -281,7 +260,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
             spin: false,
             badge: { color: "danger", text: "Pendiente" }
         },
-    };
+    } as const;
 
     const cfg = statusConfig[status];
 
@@ -290,48 +269,26 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
             className={`flex gap-4 group hover:shadow-md hover:p-2 transition-all rounded-xl ${hasDetails ? "cursor-pointer" : ""} hover:bg-gray-100 dark:hover:bg-gray-800`}
             onClick={hasDetails ? onToggle : undefined}
         >
-            {/* Icono mejorado */}
             <Tooltip content={cfg.tooltip} placement="right">
-                <div className={`
-                relative z-10 rounded-full w-12 h-12 flex items-center justify-center
-                ${cfg.bgColor} ${cfg.borderColor} border-2 shadow-sm
-                transition-all duration-300 group-hover:scale-110 group-hover:shadow-md
-            `}>
+                <div className={`relative z-10 rounded-full w-12 h-12 flex items-center justify-center ${cfg.bgColor} ${cfg.borderColor} border-2 shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:shadow-md`}>
                     <div className="relative">
-                        <Icon
-                            icon={icon}
-                            className={`text-xl ${cfg.color}`}
-                        />
-                        <div className={`
-                    absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center
-                    ${cfg.bgColor} ${cfg.borderColor} border
-                `}>
-                            <Icon
-                                icon={cfg.iconStatus}
-                                className={`text-xs ${cfg.color} ${cfg.spin ? "animate-spin" : ""}`}
-                            />
+                        <Icon icon={icon} className={`text-xl ${cfg.color}`} />
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ${cfg.bgColor} ${cfg.borderColor} border`}>
+                            <Icon icon={cfg.iconStatus} className={`text-xs ${cfg.color} ${cfg.spin ? "animate-spin" : ""}`} />
                         </div>
                     </div>
                 </div>
             </Tooltip>
 
-            {/* Contenido mejorado */}
             <div className="flex-1 pt-0 flex items-start justify-between">
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-0">
                         <h4 className="text-lg font-semibold">{title}</h4>
-                        <Chip
-                            color={cfg.badge.color as any}
-                            variant="flat"
-                            size="sm"
-                            className="font-medium"
-                        >
+                        <Chip color={cfg.badge.color as any} variant="flat" size="sm" className="font-medium">
                             {cfg.badge.text}
                         </Chip>
                     </div>
-                    {subtitle && (
-                        <p className="text-sm leading-relaxed">{subtitle}</p>
-                    )}
+                    {subtitle && <p className="text-sm leading-relaxed">{subtitle}</p>}
                 </div>
                 {hasDetails && (
                     <div className="flex items-center h-full">
@@ -346,60 +303,29 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
     );
 };
 
-interface DocumentItemProps {
-    doc: any;
-}
-
+interface DocumentItemProps { doc: any; }
 const DocumentItem: React.FC<DocumentItemProps> = ({ doc }) => {
     const statusColors = {
-        preparing: {
-            bg: "bg-warning-100 dark:bg-warning-50",
-            text: "text-warning-700 dark:text-warning-300",
-            icon: "lucide:clock",
-            border: "border-gray-200 dark:border-gray-700"
-        },
-        invalid: {
-            bg: "bg-red-50 dark:bg-red-900",
-            text: "text-red-700 dark:text-red-300",
-            icon: "lucide:alert-circle",
-            border: "border-gray-200 dark:border-gray-700"
-        },
-        reviewing: {
-            bg: "bg-blue-50 dark:bg-blue-900",
-            text: "text-blue-700 dark:text-blue-300",
-            icon: "lucide:eye",
-            border: "border-gray-200 dark:border-gray-700"
-        },
-    };
+        preparing: { bg: "bg-warning-100", text: "text-warning-700", icon: "lucide:clock", border: "border-gray-200" },
+        invalid: { bg: "bg-red-50", text: "text-red-700", icon: "lucide:alert-circle", border: "border-gray-200" },
+        reviewing: { bg: "bg-blue-50", text: "text-blue-700", icon: "lucide:eye", border: "border-gray-200" },
+    } as const;
 
-    type StatusKey = keyof typeof statusColors;
-    const status = doc.status?.toLowerCase() as StatusKey | undefined;
-    const colors = status ? statusColors[status] : statusColors.preparing;
+    const status = String(doc.status || "preparing").toLowerCase() as keyof typeof statusColors;
+    const colors = statusColors[status] ?? statusColors.preparing;
 
     return (
-        <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className={`
-                flex items-center gap-3 p-3 rounded-lg border
-                ${colors.bg} ${colors.border} hover:shadow-sm transition-shadow
-            `}
+        <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+            className={`flex items-center gap-3 p-3 rounded-lg border ${colors.bg} ${colors.border} hover:shadow-sm transition-shadow`}
         >
             <Icon icon={colors.icon} className={`text-xl ${colors.text}`} />
             <div className="flex-1">
-                <p className={`text-sm font-medium text-gray-900 dark:text-gray-100`}>{doc.name}</p>
-                <p className={`text-xs ${colors.text} mt-0.5`}>
-                    Estado: {doc.status}
-                </p>
+                <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                <p className={`text-xs ${colors.text} mt-0.5`}>Estado: {doc.status}</p>
             </div>
-            {doc.url && (
-                <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 rounded-lg transition-colors"
-                >
-                    <Icon icon="lucide:external-link" className="text-gray-500 dark:text-gray-300 text-sm" />
+            {doc.url_pre && (
+                <a href={doc.url_pre} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg transition-colors">
+                    <Icon icon="lucide:external-link" className="text-gray-500 text-sm" />
                 </a>
             )}
         </motion.div>
