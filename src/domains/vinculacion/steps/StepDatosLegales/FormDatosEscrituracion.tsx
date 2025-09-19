@@ -1,14 +1,14 @@
 import React from "react";
 import { Form, Input, Select, SelectItem, DateInput, Button, DatePicker, Autocomplete, AutocompleteItem } from "@heroui/react";
 import { Icon } from "@iconify/react";
-import { getLocalTimeZone, today, parseDate, CalendarDate } from "@internationalized/date";
+import { getLocalTimeZone, today, parseDate, CalendarDate, DateValue, ZonedDateTime } from "@internationalized/date";
 import { estadosEntry } from "@/config/constants";
 import type { Selection } from "@heroui/react";
 import { normalize } from "../helpers";
 
 type FormDataType = {
     numeroEscritura: string;
-    fechaEscritura: CalendarDate | null;
+    fechaEscritura: any; // Usar any temporalmente para evitar conflictos de tipos
     nombreNotario: string;
     numeroNotario: string;
     ciudadNotario: string;
@@ -161,12 +161,12 @@ export default function FormDatosEscrituracion({ initialData, onValidityChange, 
                 <DatePicker
                     label="Fecha de Escritura"
                     value={formData.fechaEscritura}
-                    onChange={value => handleInputChange("fechaEscritura", value)}
+                    onChange={(value: any) => handleInputChange("fechaEscritura", value)}
                     isRequired
                     isInvalid={!!errors.fechaEscritura}
                     errorMessage={errors.fechaEscritura}
                     maxValue={today(getLocalTimeZone())}
-                    fullWidth
+                    className="w-full"
                 />
                 <Input
                     label="Nombre del Notario"
