@@ -1,24 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 🚫 evita standalone -> no symlinks en Windows
+  // Evita standalone en Windows (symlinks)
   output: undefined,
 
-  // ✅ asegura App Router
-  experimental: {
-    serverActions: true, // opcional si usas server actions
-  },
+  // Ignora Lint/TS en build (Netlify no se cae por eso)
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
 
-  // ⚡ ignora validaciones en Netlify
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-
-  // 🔧 workaround: evita que Netlify intente prerender todo
-  generateBuildId: async () => {
-    return `build-${Date.now()}`;
+  // Webpack alias: cualquier import de `next/document` va a nuestro shim
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      "next/document": require.resolve("./shims/next-document.tsx"),
+    };
+    return config;
   },
 };
 
