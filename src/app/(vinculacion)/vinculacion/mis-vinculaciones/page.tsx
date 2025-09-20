@@ -1,5 +1,8 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+
 import * as React from "react";
 import {
     Card, CardBody, CardHeader, Button, Chip, Spinner, Image, Progress, ScrollShadow,
