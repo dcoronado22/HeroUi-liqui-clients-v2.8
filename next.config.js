@@ -1,13 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-     eslint: {
-    // ❌ No fallar el build por errores de lint
+  eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // ❌ No fallar el build por errores de types
     ignoreBuildErrors: true,
-  },
+  }
 };
 
 module.exports = nextConfig;
