@@ -2,7 +2,7 @@
 import React from "react";
 import { Tooltip } from "@heroui/react";
 import { operacionStateToUI } from "@/models/operacionEstado";
-import { Dots, fmtPct } from "@/components/DynamicTable/dots"; // los que ya tienes
+import { Dots, fmtPct } from "@/src/shared/components/DynamicTable/dots"; // los que ya tienes
 
 export default function OperacionDots({ estado }: { estado: number | string }) {
     const ui = operacionStateToUI(estado);

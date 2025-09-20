@@ -9,7 +9,7 @@ import { normalize } from "../helpers";
 type FormDataType = {
     nombre: string;
     numeroEscritura: string;
-    fechaEscritura: CalendarDate | null;
+    fechaEscritura: any;
     nombreNotario: string;
     numeroNotario: string;
     ciudadNotario: string;
