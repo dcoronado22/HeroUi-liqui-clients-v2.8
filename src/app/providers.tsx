@@ -8,6 +8,7 @@ import { ToastProvider } from "@heroui/react";
 import { MsalProvider } from "@azure/msal-react";
 import { AuthService } from "@liquicapital/common";
 import { useRouter } from "next/navigation";
+import { ProcessActionProviders } from "../shared/processes/ProcessProviders";
 
 export function ClientProviders({
   children,
@@ -34,7 +35,9 @@ export function ClientProviders({
       <HeroUIProvider navigate={router.push}>
         <NextThemesProvider {...themeProps}>
           <ToastProvider placement="top-center" />
-          {children}
+          <ProcessActionProviders>
+            {children}
+          </ProcessActionProviders>
         </NextThemesProvider>
       </HeroUIProvider>
     </MsalProvider>

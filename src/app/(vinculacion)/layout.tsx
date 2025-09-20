@@ -8,6 +8,7 @@ import { STEPS } from "@/src/domains/vinculacion/steps";
 import { computeHeaderProgress } from "@/src/domains/vinculacion/steps/helpers";
 import RequireAuth from "@/src/shared/auth/RequireAuth";
 import { usePathname } from "next/navigation";
+import { GuardBanner } from "@/src/shared/components/GuardBanner";
 
 export default function VinculacionLayout({ children }: { children: React.ReactNode }) {
     return (

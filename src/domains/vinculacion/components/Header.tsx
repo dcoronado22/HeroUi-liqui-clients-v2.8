@@ -34,6 +34,10 @@ import { ThemeSwitch } from "@/components/theme-switch"; // tu componente
 import { useVinculacionFlow } from "../context/flow-context";
 import { redirect } from "next/navigation";
 import { StepExpedienteModal } from "@/src/domains/vinculacion/steps/Expediente/StepExpedienteModal";
+import { useNotifications } from "@/src/shared/components/Notifications/useNotifications";
+import { GuardBanner } from "@/src/shared/components/GuardBanner";
+import { useProcessStore } from "@/src/shared/processes/processStore";
+import { Process } from "@/src/shared/processes/types";
 
 type HeaderProps = {
     stepTitle: string;
@@ -47,6 +51,15 @@ type HeaderProps = {
 };
 
 export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSteps = true, showIsCollabsable = true, showRfc = true, showAlianza = true }: HeaderProps) {
+
+    const notification = useNotifications();
+
+    useEffect(() => {
+        if (notification) {
+            console.log("Status changed:", notification);
+        }
+    }, [notification]);
+
     const flow = useVinculacionFlow();
     const isAuth = useIsAuthenticated();
     const { instance } = useMsal();
@@ -60,6 +73,13 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
     const logout = () => {
         instance.logoutRedirect({ postLogoutRedirectUri: "/" }).catch(console.error);
     };
+
+    const { state: processState } = useProcessStore();
+    const entityId = flow.id ?? "demo";
+    const processes: Process[] = processState.processes[entityId] ?? [];
+    const isBuroFailed = processes.some(
+        (p) => p.type === "BURO" && p.state === "failed" && p.failureSeverity === "hard"
+    );
 
     // NUEVO: helpers para badge del expediente
     const expedientePct = flow.expedientePct;
@@ -92,6 +112,14 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
                         />
                     </Button>
                 </Tooltip>)}
+
+                {notification && (
+                    <NavbarContent className="mr-auto">
+                        <NavbarItem className="ml-5" >
+                            <GuardBanner />
+                        </NavbarItem>
+                    </NavbarContent>
+                )}
 
                 <NavbarBrand
                     className={`bg-content2 dark:bg-content2 absolute left-1/2 top-1/2 hidden h-12 w-full max-w-fit -translate-x-1/2 -translate-y-1/2 transform items-center px-4 sm:flex rounded-full border border-default-200 dark:border-default-100/40 shadow-lg p-0 lg:px-10`}
@@ -130,41 +158,39 @@ export default function Header({ stepTitle, stepBadge, stepSubtitle, rfc, showSt
                     {flow.folderId && (
                         <NavbarItem>
                             {typeof expedientePct === "number" ? (
-                                <Badge
-                                    color="primary"
-                                    content={`${expedientePct}%`}
-                                    size="sm"
-                                >
-                                    <Tooltip
-                                        content={`Expediente (${expedientePct}%)`}
-                                        placement="bottom"
-                                    >
-                                        <Button
-                                            isIconOnly
-                                            radius="full"
-                                            variant="light"
-                                            onPress={() => setIsExpedienteOpen(true)}
-                                            className="h-12 w-12 p-0 bg-content2 dark:bg-content2 border border-default-300 dark:border-default-100/40 shadow-lg"
-                                        >
-                                            <Icon className="text-primary" icon="line-md:folder-multiple-twotone" width={22} />
-                                        </Button>
+                                <Badge color="primary" content={`${expedientePct}%`} size="sm">
+                                    <Tooltip content={isBuroFailed ? "Expediente bloqueado por Buró fallido" : `Expediente (${expedientePct}%)`} placement="bottom">
+                                        <span className={isBuroFailed ? "cursor-not-allowed" : ""}>
+                                            <Button
+                                                isIconOnly
+                                                radius="full"
+                                                variant="light"
+                                                onPress={() => !isBuroFailed && setIsExpedienteOpen(true)}
+                                                className="h-12 w-12 p-0 bg-content2 dark:bg-content2 border border-default-300 dark:border-default-100/40 shadow-lg"
+                                                disabled={isBuroFailed}
+                                                aria-disabled={isBuroFailed}
+                                            >
+                                                <Icon className="text-primary" icon="line-md:folder-multiple-twotone" width={22} />
+                                            </Button>
+                                        </span>
                                     </Tooltip>
                                 </Badge>
                             ) : (
                                 <Badge color="default" content="N/A" size="sm">
-                                    <Tooltip
-                                        content="Expediente (N/A)"
-                                        placement="bottom"
-                                    >
-                                        <Button
-                                            isIconOnly
-                                            radius="full"
-                                            variant="light"
-                                            onPress={() => setIsExpedienteOpen(true)}
-                                            className="h-12 w-12 p-0 bg-content2 dark:bg-content2 border border-default-300 dark:border-default-100/40 shadow-lg"
-                                        >
-                                            <Icon className="text-primary" icon="line-md:folder-multiple-twotone" width={22} />
-                                        </Button>
+                                    <Tooltip content={isBuroFailed ? "Expediente bloqueado por Buró fallido" : "Expediente (N/A)"} placement="bottom">
+                                        <span className={isBuroFailed ? "cursor-not-allowed" : ""}>
+                                            <Button
+                                                isIconOnly
+                                                radius="full"
+                                                variant="light"
+                                                onPress={() => !isBuroFailed && setIsExpedienteOpen(true)}
+                                                className="h-12 w-12 p-0 bg-content2 dark:bg-content2 border border-default-300 dark:border-default-100/40 shadow-lg"
+                                                disabled={isBuroFailed}
+                                                aria-disabled={isBuroFailed}
+                                            >
+                                                <Icon className="text-primary" icon="line-md:folder-multiple-twotone" width={22} />
+                                            </Button>
+                                        </span>
                                     </Tooltip>
                                 </Badge>
                             )}

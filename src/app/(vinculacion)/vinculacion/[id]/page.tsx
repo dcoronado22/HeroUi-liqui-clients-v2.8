@@ -11,6 +11,10 @@ import { stateToComponentMap, StateToStepId, STEPS } from "@/src/domains/vincula
 import { EstadoVinculacion } from "@/src/domains/vinculacion/estados";
 import { areDatosLegalesValid } from "@/src/domains/vinculacion/steps/helpers";
 import { CheckAnimation } from "@/src/shared/components/CheckAnimation";
+import { useProcessStore } from "@/src/shared/processes/processStore";
+import { Process } from "@/src/shared/processes/types";
+import { useWebSocketClient } from "@/src/shared/hooks/useWebSocketClient";
+import BuroFailed from "@/src/shared/components/BuroFailed";
 
 export default function VinculacionCasePage() {
     const params = useParams<{ id: string }>();
@@ -27,12 +31,32 @@ export default function VinculacionCasePage() {
     }>({});
 
     const flow = useVinculacionFlow();
+    useWebSocketClient("ws://localhost:4000", flow.id ?? undefined);
     const [loading, setLoading] = React.useState(true);
     const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
     const [loadingNext, setLoadingNext] = React.useState(false);
     const [validationsLoading, setValidationsLoading] = React.useState(false);
     const [allValid, setAllValid] = React.useState(false);
     const [showCheckAnimation, setShowCheckAnimation] = React.useState(false);
+
+    const { state: processState } = useProcessStore();
+    const entityId = flow.id ?? "demo"; // usa la vinculación actual (o "demo" si estás probando)
+    const processes: Process[] = processState.processes[entityId] ?? [];
+
+    const buroFailed =
+        processes.some(p => p.type === "BURO" && p.state === "failed" && p.failureSeverity === "hard");
+
+    console.log("🔎 entityId:", entityId);
+    console.log("🔎 processes:", processes);
+    console.log("🔎 buroFailed?:", buroFailed);
+
+    React.useEffect(() => {
+        if (buroFailed && !collapsed) {
+            flow.toggleSidebar();
+        }
+
+    }, [buroFailed])
+
 
     React.useEffect(() => {
         // Si ya hay un ID en el contexto y es diferente al actual, resetear
@@ -278,7 +302,9 @@ export default function VinculacionCasePage() {
                 <Card
                     className={cn(
                         "shrink-0 h-full transition-all duration-300 overflow-hidden",
-                        collapsed ? "w-[5.3%]" : "basis-[20%]"
+                        collapsed ? "w-[5.3%]" : "basis-[20%]",
+                        buroFailed && "opacity-200 blur-[1.5px] pointer-events-none select-none",
+                        "dark:bg-white/5 " // <-- agrega bg para dark mode
                     )}
                 >
                     <CardBody className="h-full overflow-auto">
@@ -288,7 +314,7 @@ export default function VinculacionCasePage() {
                             currentId={currentStepId}
                             clickable={false}
                             compact={collapsed}
-                            markActiveAsCompleteIds={allValid ? [currentStepId] : []} // <-- NUEVO
+                            markActiveAsCompleteIds={allValid ? [currentStepId] : []}
                         />
                     </CardBody>
                 </Card>
@@ -296,7 +322,7 @@ export default function VinculacionCasePage() {
                 {/* RIGHT: Contenido + Footer persistente */}
                 <Card className="flex-1 h-full">
                     <CardBody className="h-full p-0">
-                        <div className="flex h-full flex-col">
+                        <div className={`flex h-full flex-col ${buroFailed ? "blur-sm pointer-events-none" : ""}`}>
                             {/* CONTENIDO */}
                             <div className="flex-1 overflow-auto p-4">
                                 {loading ? (
@@ -346,16 +372,19 @@ export default function VinculacionCasePage() {
 
                             {/* FOOTER */}
                             {!allValid && (
-                                <StepActions
-                                    onPrev={stepActions.prev}
-                                    onNext={stepActions.next}
-                                    disablePrev={stepActions.prevDisabled}
-                                    disableNext={stepActions.nextDisabled}
-                                    loadingNext={loadingNext} // <-- ya está correcto
-                                />
+                                <>
+                                    <StepActions
+                                        onPrev={stepActions.prev}
+                                        onNext={stepActions.next}
+                                        disablePrev={stepActions.prevDisabled}
+                                        disableNext={stepActions.nextDisabled}
+                                        loadingNext={loadingNext} // <-- ya está correcto
+                                    />
+                                </>
                             )}
                         </div>
                     </CardBody>
+                    {buroFailed && <BuroFailed />}
                 </Card>
             </div>
         </div>
