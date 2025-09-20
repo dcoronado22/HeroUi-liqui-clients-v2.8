@@ -165,7 +165,6 @@ export default function FormDatosEscrituracion({ initialData, onValidityChange, 
                     isRequired
                     isInvalid={!!errors.fechaEscritura}
                     errorMessage={errors.fechaEscritura}
-                    maxValue={today(getLocalTimeZone())}
                     className="w-full"
                 />
                 <Input
