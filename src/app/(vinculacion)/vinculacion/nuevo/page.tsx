@@ -2,8 +2,9 @@
 "use client";
 
 // en app/vinculacion/nuevo/page.tsx
-export const dynamic = "force-dynamic";
 
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
