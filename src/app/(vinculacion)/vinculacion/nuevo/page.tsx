@@ -1,6 +1,10 @@
 // src/app/(vinculacion)/vinculacion/nuevo/page.tsx
 "use client";
 
+// en app/vinculacion/nuevo/page.tsx
+export const dynamic = "force-dynamic";
+
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, Input, Checkbox, Button, Divider, CardFooter, cn } from "@heroui/react";
