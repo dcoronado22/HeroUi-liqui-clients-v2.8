@@ -184,7 +184,6 @@ export default function FormRepresentanteLegal({ initialData, onValidityChange, 
                     showMonthAndYearPickers
                     isInvalid={!!errors.fechaEscritura}
                     errorMessage={errors.fechaEscritura}
-                    maxValue={today(getLocalTimeZone())}
                     fullWidth
                 />
                 <Input
